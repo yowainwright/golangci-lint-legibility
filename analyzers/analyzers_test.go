@@ -122,6 +122,25 @@ func value() {
 	requireDiagnostic(t, diagnostics, "LEG038 max-function-lines")
 }
 
+func TestMaxFunctionLinesMeasuresNestedFunctionsSeparately(t *testing.T) {
+	maxLines := 3
+	settings := Settings{MaxFunctionLines: &maxLines}
+	source := `package p
+func value() {
+	run(func() {
+		step1()
+		step2()
+		step3()
+	})
+}`
+
+	analyzer := analyzerByRuleWithSettings(t, "max-function-lines", settings)
+	diagnostics, fileSet := runAnalyzerWithFileSet(t, analyzer, "p.go", source)
+	requireDiagnosticsCount(t, diagnostics, 1)
+	requireDiagnostic(t, diagnostics, "LEG038 max-function-lines")
+	requireDiagnosticLine(t, fileSet, diagnostics[0], 3)
+}
+
 func TestRequireFilenameMatchesDirnameReportsWhenEnabled(t *testing.T) {
 	minDepth := 2
 	settings := Settings{
@@ -148,10 +167,25 @@ func TestSettingsDisableRule(t *testing.T) {
 	}
 }
 
+func TestMaxFunctionLinesIsDefaultEnabled(t *testing.T) {
+	analyzerByRule(t, "max-function-lines")
+}
+
 func TestRequireFilenameMatchesDirnameIsOptIn(t *testing.T) {
 	for _, analyzer := range New(Settings{}) {
 		if analyzer.Name == analysisName("require-filename-matches-dirname") {
 			t.Fatal("require-filename-matches-dirname should be opt-in")
+		}
+	}
+}
+
+func TestSpecialRuleSelectorsIgnoreCase(t *testing.T) {
+	selectors := []string{"All", "ALL", "leg"}
+	for _, selector := range selectors {
+		settings := Settings{EnabledRules: []string{selector}}
+		analyzers := New(settings)
+		if len(analyzers) == 0 {
+			t.Fatalf("%q should enable analyzers", selector)
 		}
 	}
 }
@@ -199,13 +233,25 @@ func runAnalyzer(
 ) []analysis.Diagnostic {
 	t.Helper()
 
+	diagnostics, _ := runAnalyzerWithFileSet(t, analyzer, filename, source)
+	return diagnostics
+}
+
+func runAnalyzerWithFileSet(
+	t *testing.T,
+	analyzer *analysis.Analyzer,
+	filename string,
+	source string,
+) ([]analysis.Diagnostic, *token.FileSet) {
+	t.Helper()
+
 	var diagnostics []analysis.Diagnostic
 	fileSet := token.NewFileSet()
 	file := parseAnalyzerFile(t, fileSet, filename, source)
 	pass := analyzerPass(fileSet, file, &diagnostics)
 	runAnalysis(t, analyzer, pass)
 
-	return diagnostics
+	return diagnostics, fileSet
 }
 
 func parseAnalyzerFile(
@@ -257,4 +303,26 @@ func requireDiagnostic(t *testing.T, diagnostics []analysis.Diagnostic, text str
 	}
 
 	t.Fatalf("missing diagnostic %q in %#v", text, diagnostics)
+}
+
+func requireDiagnosticsCount(t *testing.T, diagnostics []analysis.Diagnostic, want int) {
+	t.Helper()
+
+	if len(diagnostics) != want {
+		t.Fatalf("diagnostic count = %d, want %d: %#v", len(diagnostics), want, diagnostics)
+	}
+}
+
+func requireDiagnosticLine(
+	t *testing.T,
+	fileSet *token.FileSet,
+	diagnostic analysis.Diagnostic,
+	want int,
+) {
+	t.Helper()
+
+	got := fileSet.Position(diagnostic.Pos).Line
+	if got != want {
+		t.Fatalf("diagnostic line = %d, want %d", got, want)
+	}
 }

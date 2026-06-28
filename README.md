@@ -142,7 +142,7 @@ GOPROXY=proxy.golang.org go list -m github.com/yowainwright/golangci-lint-legibi
 | `min-switch-chain-length` | 3 | Minimum repeated comparison chain length before suggesting `switch`. |
 | `max-if-init-operators` | 0 | Maximum boolean operators when an `if` also has an initializer. |
 | `max-composite-literal-arg-depth` | 1 | Maximum nested composite literal depth in call arguments. |
-| `max-function-lines` | 20 | Maximum source lines in a function declaration or literal. |
+| `max-function-lines` | 20 | Maximum source lines in a function declaration or literal; nested literals are measured independently. |
 | `negative-condition-name-pattern` | built in | Regular expression for negative boolean names. |
 
 Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name.

@@ -133,9 +133,9 @@ func selectorMatches(code string, name string, selector string) bool {
 }
 
 func specialSelectorMatches(selector string) bool {
-	if selector == "all" {
+	if strings.EqualFold(selector, "all") {
 		return true
 	}
 
-	return selector == defaultNegativeConditionNamePrefix
+	return strings.EqualFold(selector, defaultNegativeConditionNamePrefix)
 }
