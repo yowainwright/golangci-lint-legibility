@@ -1,0 +1,26 @@
+name: Feature Request
+description: Suggest a rule, setting, or project improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What readability issue should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the rule, setting, or workflow change.
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Include before-and-after Go snippets when relevant.
+      render: go

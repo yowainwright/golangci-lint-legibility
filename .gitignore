@@ -1,0 +1,12 @@
+/bin/
+/.cache/
+/coverage.out
+
+*.out
+*.test
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
