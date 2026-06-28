@@ -86,6 +86,10 @@ func checkFunctionGuardClause(pass *analysis.Pass, body *ast.BlockStmt) {
 		return
 	}
 
+	reportGuardClause(pass, stmt)
+}
+
+func reportGuardClause(pass *analysis.Pass, stmt *ast.IfStmt) {
 	report(
 		pass,
 		stmt,

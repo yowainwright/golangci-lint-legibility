@@ -60,6 +60,7 @@ linters:
           min-switch-chain-length: 3
           max-if-init-operators: 0
           max-composite-literal-arg-depth: 1
+          max-function-lines: 20
           disabled-rules:
             - prefer-guard-clauses
 ```
@@ -141,6 +142,7 @@ GOPROXY=proxy.golang.org go list -m github.com/yowainwright/golangci-lint-legibi
 | `min-switch-chain-length` | 3 | Minimum repeated comparison chain length before suggesting `switch`. |
 | `max-if-init-operators` | 0 | Maximum boolean operators when an `if` also has an initializer. |
 | `max-composite-literal-arg-depth` | 1 | Maximum nested composite literal depth in call arguments. |
+| `max-function-lines` | 20 | Maximum source lines in a function declaration or literal; nested literals are measured independently. |
 | `negative-condition-name-pattern` | built in | Regular expression for negative boolean names. |
 
 Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name.
@@ -172,6 +174,7 @@ Each rule has an inline do / don't diff example in [Examples](#examples).
 | [`LEG035`](#leg035-no-bool-literal-args) | `no-bool-literal-args` | Avoid boolean literals as call arguments. |
 | [`LEG036`](#leg036-no-complex-if-init) | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
 | [`LEG037`](#leg037-no-deep-composite-literal-arg) | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
+| [`LEG038`](#leg038-max-function-lines) | `max-function-lines` | Limit functions to a focused line budget. |
 
 ## Examples
 
@@ -469,6 +472,30 @@ Opt-in. Enable it with `enabled-rules` when the project uses directory-mirrored 
 - save(Config{HTTP: HTTPConfig{Timeout: 10}})
 + httpConfig := HTTPConfig{Timeout: 10}
 + save(Config{HTTP: httpConfig})
+```
+
+---
+
+### `LEG038 max-function-lines`
+
+#### do / don't
+
+```diff
+- func syncUser(user User) error {
+- 	validateUser(user)
+- 	normalizeUser(&user)
+- 	saveUser(user)
+- 	sendWelcomeEmail(user)
+- 	writeAuditLog(user)
+- 	refreshSearchIndex(user)
+- 	return nil
+- }
++ func syncUser(user User) error {
++ 	if err := prepareUser(&user); err != nil {
++ 		return err
++ 	}
++ 	return persistUser(user)
++ }
 ```
 
 ## Develop

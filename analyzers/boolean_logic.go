@@ -33,20 +33,18 @@ func checkRedundantBooleanLogic(pass *analysis.Pass) {
 }
 
 func checkBooleanComparison(pass *analysis.Pass, expression *ast.BinaryExpr) {
-	isEquality := expression.Op == token.EQL
-	isInequality := expression.Op == token.NEQ
-	isBooleanComparison := isEquality || isInequality
-	if !isBooleanComparison {
+	if !isBooleanComparison(expression) {
 		return
 	}
 
-	leftIsBool := isBoolLiteral(expression.X)
-	rightIsBool := isBoolLiteral(expression.Y)
-	hasBoolLiteral := leftIsBool || rightIsBool
-	if !hasBoolLiteral {
+	if !hasBoolLiteralComparison(expression) {
 		return
 	}
 
+	reportBooleanComparison(pass, expression)
+}
+
+func reportBooleanComparison(pass *analysis.Pass, expression *ast.BinaryExpr) {
 	report(
 		pass,
 		expression,
@@ -54,6 +52,18 @@ func checkBooleanComparison(pass *analysis.Pass, expression *ast.BinaryExpr) {
 		"no-redundant-boolean-logic",
 		"Avoid comparing a boolean expression to true or false.",
 	)
+}
+
+func isBooleanComparison(expression *ast.BinaryExpr) bool {
+	isEquality := expression.Op == token.EQL
+	isInequality := expression.Op == token.NEQ
+	return isEquality || isInequality
+}
+
+func hasBoolLiteralComparison(expression *ast.BinaryExpr) bool {
+	leftIsBool := isBoolLiteral(expression.X)
+	rightIsBool := isBoolLiteral(expression.Y)
+	return leftIsBool || rightIsBool
 }
 
 func isBoolLiteral(expression ast.Expr) bool {

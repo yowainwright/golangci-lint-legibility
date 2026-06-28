@@ -53,6 +53,16 @@ func checkTrivialWrapper(pass *analysis.Pass, decl *ast.FuncDecl) {
 }
 
 func singleReturnCall(body *ast.BlockStmt) *ast.CallExpr {
+	returnStmt := singleReturnStmt(body)
+	if returnStmt == nil {
+		return nil
+	}
+
+	call, _ := returnStmt.Results[0].(*ast.CallExpr)
+	return call
+}
+
+func singleReturnStmt(body *ast.BlockStmt) *ast.ReturnStmt {
 	if body == nil {
 		return nil
 	}
@@ -61,17 +71,20 @@ func singleReturnCall(body *ast.BlockStmt) *ast.CallExpr {
 		return nil
 	}
 
-	returnStmt, ok := body.List[0].(*ast.ReturnStmt)
-	if !ok {
+	returnStmt, _ := body.List[0].(*ast.ReturnStmt)
+	if !singleResultReturn(returnStmt) {
 		return nil
 	}
 
-	if len(returnStmt.Results) != 1 {
-		return nil
+	return returnStmt
+}
+
+func singleResultReturn(stmt *ast.ReturnStmt) bool {
+	if stmt == nil {
+		return false
 	}
 
-	call, _ := returnStmt.Results[0].(*ast.CallExpr)
-	return call
+	return len(stmt.Results) == 1
 }
 
 func fieldNames(fields *ast.FieldList) []string {

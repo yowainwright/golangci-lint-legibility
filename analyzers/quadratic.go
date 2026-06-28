@@ -33,28 +33,40 @@ func checkNestedLoops(pass *analysis.Pass) {
 }
 
 func checkLoopBodyForNestedLoops(pass *analysis.Pass, body *ast.BlockStmt) {
-	ast.Inspect(body, func(node ast.Node) bool {
-		if node == body {
-			return true
-		}
+	ast.Inspect(body, nestedLoopInspector(pass, body))
+}
 
-		if _, ok := node.(*ast.FuncLit); ok {
-			return false
-		}
+func nestedLoopInspector(pass *analysis.Pass, body *ast.BlockStmt) func(ast.Node) bool {
+	return func(node ast.Node) bool {
+		return inspectNestedLoopNode(pass, body, node)
+	}
+}
 
-		if isLoopNode(node) {
-			report(
-				pass,
-				node,
-				"LEG005",
-				"no-quadratic-patterns",
-				"Nested loop detected. Consider pre-indexing with a map.",
-			)
-			return false
-		}
-
+func inspectNestedLoopNode(pass *analysis.Pass, body *ast.BlockStmt, node ast.Node) bool {
+	if node == body {
 		return true
-	})
+	}
+
+	if _, ok := node.(*ast.FuncLit); ok {
+		return false
+	}
+
+	if isLoopNode(node) {
+		reportNestedLoop(pass, node)
+		return false
+	}
+
+	return true
+}
+
+func reportNestedLoop(pass *analysis.Pass, node ast.Node) {
+	report(
+		pass,
+		node,
+		"LEG005",
+		"no-quadratic-patterns",
+		"Nested loop detected. Consider pre-indexing with a map.",
+	)
 }
 
 func loopBody(node ast.Node) (*ast.BlockStmt, bool) {
