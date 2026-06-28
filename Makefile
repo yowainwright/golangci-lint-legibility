@@ -1,9 +1,12 @@
 GOLANGCI_LINT_CACHE ?= $(CURDIR)/.cache/golangci-lint
+CUSTOM_GOFLAGS ?= -buildvcs=false
 
-.PHONY: custom fmt fmt-check lint test vet
+.PHONY: check custom fmt fmt-check lint test vet
+
+check: fmt-check vet test lint
 
 custom:
-	golangci-lint custom
+	GOFLAGS="$(CUSTOM_GOFLAGS)" golangci-lint custom
 
 fmt:
 	gofmt -w analyzers plugin
