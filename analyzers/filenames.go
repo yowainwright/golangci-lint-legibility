@@ -84,11 +84,20 @@ func checkFilenameCasing(pass *analysis.Pass) {
 
 func hasMixedFilenameCasing(path string) bool {
 	name := filenameStem(filepath.Base(path))
+	characters := filenameCharacters(name)
+	return mixesFilenameCasing(name, characters)
+}
+
+func filenameCharacters(name string) map[rune]bool {
 	characters := map[rune]bool{}
 	for _, char := range name {
 		characters[char] = true
 	}
 
+	return characters
+}
+
+func mixesFilenameCasing(name string, characters map[rune]bool) bool {
 	hasHyphen := characters['-']
 	hasUnderscore := characters['_']
 	hasUpper := uppercasePattern.MatchString(name)

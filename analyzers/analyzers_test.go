@@ -105,6 +105,23 @@ func value() {
 	requireDiagnostic(t, diagnostics, "LEG037 no-deep-composite-literal-arg")
 }
 
+func TestMaxFunctionLinesReportsLongFunction(t *testing.T) {
+	maxLines := 5
+	settings := Settings{MaxFunctionLines: &maxLines}
+	source := `package p
+func value() {
+	step1()
+	step2()
+	step3()
+	step4()
+	step5()
+}`
+
+	analyzer := analyzerByRuleWithSettings(t, "max-function-lines", settings)
+	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
+	requireDiagnostic(t, diagnostics, "LEG038 max-function-lines")
+}
+
 func TestRequireFilenameMatchesDirnameReportsWhenEnabled(t *testing.T) {
 	minDepth := 2
 	settings := Settings{
@@ -182,27 +199,52 @@ func runAnalyzer(
 ) []analysis.Diagnostic {
 	t.Helper()
 
+	var diagnostics []analysis.Diagnostic
 	fileSet := token.NewFileSet()
+	file := parseAnalyzerFile(t, fileSet, filename, source)
+	pass := analyzerPass(fileSet, file, &diagnostics)
+	runAnalysis(t, analyzer, pass)
+
+	return diagnostics
+}
+
+func parseAnalyzerFile(
+	t *testing.T,
+	fileSet *token.FileSet,
+	filename string,
+	source string,
+) *ast.File {
+	t.Helper()
+
 	file, err := parser.ParseFile(fileSet, filename, source, parser.ParseComments)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var diagnostics []analysis.Diagnostic
-	pass := &analysis.Pass{
+	return file
+}
+
+func analyzerPass(
+	fileSet *token.FileSet,
+	file *ast.File,
+	diagnostics *[]analysis.Diagnostic,
+) *analysis.Pass {
+	return &analysis.Pass{
 		Fset:  fileSet,
 		Files: []*ast.File{file},
 		Report: func(diagnostic analysis.Diagnostic) {
-			diagnostics = append(diagnostics, diagnostic)
+			*diagnostics = append(*diagnostics, diagnostic)
 		},
 	}
+}
 
-	_, err = analyzer.Run(pass)
+func runAnalysis(t *testing.T, analyzer *analysis.Analyzer, pass *analysis.Pass) {
+	t.Helper()
+
+	_, err := analyzer.Run(pass)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	return diagnostics
 }
 
 func requireDiagnostic(t *testing.T, diagnostics []analysis.Diagnostic, text string) {

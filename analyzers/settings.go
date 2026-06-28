@@ -14,6 +14,7 @@ const (
 	defaultMinSwitchChainLength        = 3
 	defaultMaxIfInitOperators          = 0
 	defaultMaxCompositeLiteralArgDepth = 1
+	defaultMaxFunctionLines            = 20
 	defaultNegativeConditionNamePrefix = "LEG"
 )
 
@@ -31,6 +32,7 @@ type Settings struct {
 	MinSwitchChainLength         *int     `json:"min-switch-chain-length"`
 	MaxIfInitOperators           *int     `json:"max-if-init-operators"`
 	MaxCompositeLiteralArgDepth  *int     `json:"max-composite-literal-arg-depth"`
+	MaxFunctionLines             *int     `json:"max-function-lines"`
 	NegativeConditionNamePattern string   `json:"negative-condition-name-pattern"`
 }
 
@@ -91,6 +93,10 @@ func (s Settings) maxCompositeLiteralArgDepth() int {
 	return intSetting(s.MaxCompositeLiteralArgDepth, defaultMaxCompositeLiteralArgDepth)
 }
 
+func (s Settings) maxFunctionLines() int {
+	return intSetting(s.MaxFunctionLines, defaultMaxFunctionLines)
+}
+
 func intSetting(value *int, fallback int) int {
 	if value == nil {
 		return fallback
@@ -115,13 +121,7 @@ func selectorMatches(code string, name string, selector string) bool {
 		return false
 	}
 
-	isAllSelector := normalized == "all"
-	if isAllSelector {
-		return true
-	}
-
-	isCodePrefixSelector := normalized == defaultNegativeConditionNamePrefix
-	if isCodePrefixSelector {
+	if specialSelectorMatches(normalized) {
 		return true
 	}
 
@@ -130,4 +130,12 @@ func selectorMatches(code string, name string, selector string) bool {
 	}
 
 	return strings.EqualFold(normalized, name)
+}
+
+func specialSelectorMatches(selector string) bool {
+	if selector == "all" {
+		return true
+	}
+
+	return selector == defaultNegativeConditionNamePrefix
 }

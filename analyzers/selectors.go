@@ -48,6 +48,10 @@ func checkSelectorChain(
 		return
 	}
 
+	reportSelectorChain(pass, expression)
+}
+
+func reportSelectorChain(pass *analysis.Pass, expression ast.Expr) {
 	report(
 		pass,
 		expression,
