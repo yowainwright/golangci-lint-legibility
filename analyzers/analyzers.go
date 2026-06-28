@@ -20,7 +20,16 @@ type ruleSpec struct {
 }
 
 func New(settings Settings) []*analysis.Analyzer {
-	specs := []ruleSpec{
+	return enabledAnalyzers(settings, ruleSpecs(settings))
+}
+
+func ruleSpecs(settings Settings) []ruleSpec {
+	specs := coreRuleSpecs(settings)
+	return append(specs, goRuleSpecs(settings)...)
+}
+
+func coreRuleSpecs(settings Settings) []ruleSpec {
+	return []ruleSpec{
 		newMaxExpressionOperators(settings),
 		newHoistIfOperators(settings),
 		newMaxControlFlowDepth(settings),
@@ -33,6 +42,11 @@ func New(settings Settings) []*analysis.Analyzer {
 		newMaxArrayChainDepth(settings),
 		newNoComputedValues(settings),
 		newPreferObjectLookup(settings),
+	}
+}
+
+func goRuleSpecs(settings Settings) []ruleSpec {
+	return []ruleSpec{
 		newRequireFilenameMatchesDirname(settings),
 		newNoMixedFilenameCasing(),
 		newNoDeepSelectorChain(settings),
@@ -40,8 +54,11 @@ func New(settings Settings) []*analysis.Analyzer {
 		newNoBoolLiteralArgs(),
 		newNoComplexIfInit(settings),
 		newNoDeepCompositeLiteralArg(settings),
+		newMaxFunctionLines(settings),
 	}
+}
 
+func enabledAnalyzers(settings Settings, specs []ruleSpec) []*analysis.Analyzer {
 	analyzers := make([]*analysis.Analyzer, 0, len(specs))
 	for _, spec := range specs {
 		if settings.RuleEnabled(spec.code, spec.name, spec.defaultEnabled) {
@@ -82,17 +99,23 @@ func newRuleSpec(
 	defaultEnabled bool,
 	run func(*analysis.Pass) (any, error),
 ) ruleSpec {
-	analyzer := &analysis.Analyzer{
-		Name: analysisName(name),
-		Doc:  summary,
-		Run:  run,
-	}
-
 	return ruleSpec{
 		code:           code,
 		name:           name,
 		summary:        summary,
 		defaultEnabled: defaultEnabled,
-		analyzer:       analyzer,
+		analyzer:       analysisAnalyzer(name, summary, run),
+	}
+}
+
+func analysisAnalyzer(
+	name string,
+	summary string,
+	run func(*analysis.Pass) (any, error),
+) *analysis.Analyzer {
+	return &analysis.Analyzer{
+		Name: analysisName(name),
+		Doc:  summary,
+		Run:  run,
 	}
 }

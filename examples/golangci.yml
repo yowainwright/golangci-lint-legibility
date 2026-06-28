@@ -21,6 +21,7 @@ linters:
           min-switch-chain-length: 3
           max-if-init-operators: 0
           max-composite-literal-arg-depth: 1
+          max-function-lines: 20
 
 formatters:
   enable:
