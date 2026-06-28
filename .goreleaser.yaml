@@ -1,0 +1,33 @@
+version: 2
+
+project_name: golangci-lint-legibility
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - skip: true
+
+source:
+  enabled: true
+  name_template: "{{ .ProjectName }}_{{ .Version }}_source"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^chore:"
+      - "^docs:"
+      - "^test:"
+
+release:
+  github:
+    owner: yowainwright
+    name: golangci-lint-legibility
+  mode: keep-existing
+  draft: false
+  prerelease: auto

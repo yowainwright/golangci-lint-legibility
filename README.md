@@ -73,6 +73,55 @@ Run:
 
 See the `golangci-lint` [module plugin docs](https://golangci-lint.run/plugins/module-plugins/) for the custom binary workflow.
 
+## Trust
+
+<!-- release and provenance guarantees derived from .github/workflows/release.yml, .goreleaser.yaml, and LICENSE -->
+
+Releases are built from pushed `v*` tags by GitHub Actions. The release workflow runs formatting, `go vet`, tests, and this linter against itself before publishing.
+
+GoReleaser publishes a source archive and `checksums.txt`. This package does not publish a standalone binary because consumers build their own custom `golangci-lint` binary from the released Go module.
+
+Release artifacts are covered by GitHub artifact attestations. They use short-lived OIDC/Sigstore credentials from GitHub Actions instead of long-lived signing secrets.
+
+Verify a release:
+
+```sh
+gh release download v0.1.0 \
+  --repo yowainwright/golangci-lint-legibility \
+  --pattern "golangci-lint-legibility_*_source.tar.gz" \
+  --pattern "checksums.txt"
+
+sha256sum -c checksums.txt
+
+gh attestation verify golangci-lint-legibility_0.1.0_source.tar.gz \
+  --repo yowainwright/golangci-lint-legibility
+```
+
+OpenSSF Scorecard runs weekly and reports supply-chain posture through GitHub code scanning.
+
+## Release
+
+<!-- release commands derived from .goreleaser.yaml and .github/workflows/release.yml -->
+
+Create a release by tagging the module:
+
+```sh
+go mod tidy
+make fmt-check
+make vet
+make test
+make lint
+
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The pushed tag triggers GoReleaser. After the workflow finishes, warm the Go module proxy:
+
+```sh
+GOPROXY=proxy.golang.org go list -m github.com/yowainwright/golangci-lint-legibility@v0.1.0
+```
+
 ## Settings
 
 <!-- settings derived from analyzers/settings.go -->

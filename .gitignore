@@ -1,5 +1,6 @@
 /bin/
 /.cache/
+/dist/
 /coverage.out
 
 *.out
