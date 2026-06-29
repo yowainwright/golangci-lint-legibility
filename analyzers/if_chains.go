@@ -57,15 +57,23 @@ func checkSwitchableIfChain(
 		return
 	}
 
+	if !hasSwitchableIfChainSubjects(pass, stmt, min) {
+		return
+	}
+
+	reportSwitchableIfChain(pass, stmt)
+}
+
+func hasSwitchableIfChainSubjects(pass *analysis.Pass, stmt *ast.IfStmt, min int) bool {
 	subjects := collectIfChainSubjects(pass, stmt)
 	if len(subjects) < min {
-		return
+		return false
 	}
 
-	if !sameSubject(subjects) {
-		return
-	}
+	return sameSubject(subjects)
+}
 
+func reportSwitchableIfChain(pass *analysis.Pass, stmt *ast.IfStmt) {
 	report(
 		pass,
 		stmt,

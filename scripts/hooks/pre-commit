@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "${SKIP_LEGIBILITY_HOOKS:-}" = "1" ]; then
+	printf '%s\n' "Skipping pre-commit checks."
+	exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+printf '%s\n' "Running pre-commit checks..."
+make check

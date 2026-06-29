@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "${SKIP_LEGIBILITY_HOOKS:-}" = "1" ]; then
+	printf '%s\n' "Skipping post-merge checks."
+	exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+printf '%s\n' "Running post-merge checks..."
+make check
