@@ -48,6 +48,10 @@ func checkCallChain(
 		return
 	}
 
+	reportCallChain(pass, call)
+}
+
+func reportCallChain(pass *analysis.Pass, call *ast.CallExpr) {
 	report(
 		pass,
 		call,

@@ -9,6 +9,14 @@ import (
 
 type operatorMode int
 
+type operatorLimit struct {
+	max     int
+	mode    operatorMode
+	code    string
+	rule    string
+	message string
+}
+
 const (
 	readabilityOperators operatorMode = iota
 	booleanOperators
@@ -71,18 +79,19 @@ func checkExpressionNode(
 	mode operatorMode,
 	seen map[ast.Expr]bool,
 ) {
+	limit := expressionOperatorLimit(max, mode)
 	for _, expression := range expressionContexts(node) {
-		message := "Expression has too many operators. Extract named values."
-		checkOperatorLimit(
-			pass,
-			expression,
-			max,
-			mode,
-			seen,
-			"LEG001",
-			"max-expression-operators",
-			message,
-		)
+		checkOperatorLimit(pass, expression, seen, limit)
+	}
+}
+
+func expressionOperatorLimit(max int, mode operatorMode) operatorLimit {
+	return operatorLimit{
+		max:     max,
+		mode:    mode,
+		code:    "LEG001",
+		rule:    "max-expression-operators",
+		message: "Expression has too many operators. Extract named values.",
 	}
 }
 
@@ -108,25 +117,30 @@ func expressionContexts(node ast.Node) []ast.Expr {
 func checkIfConditions(pass *analysis.Pass, max int) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(node ast.Node) bool {
-			stmt, ok := node.(*ast.IfStmt)
-			if !ok {
-				return true
-			}
-
-			seen := make(map[ast.Expr]bool)
-			message := "If condition has too many boolean operators. Hoist it into a named boolean."
-			checkOperatorLimit(
-				pass,
-				stmt.Cond,
-				max,
-				booleanOperators,
-				seen,
-				"LEG002",
-				"hoist-if-operators",
-				message,
-			)
+			checkIfConditionNode(pass, node, max)
 			return true
 		})
+	}
+}
+
+func checkIfConditionNode(pass *analysis.Pass, node ast.Node, max int) {
+	stmt, ok := node.(*ast.IfStmt)
+	if !ok {
+		return
+	}
+
+	seen := make(map[ast.Expr]bool)
+	limit := ifOperatorLimit(max)
+	checkOperatorLimit(pass, stmt.Cond, seen, limit)
+}
+
+func ifOperatorLimit(max int) operatorLimit {
+	return operatorLimit{
+		max:     max,
+		mode:    booleanOperators,
+		code:    "LEG002",
+		rule:    "hoist-if-operators",
+		message: "If condition has too many boolean operators. Hoist it into a named boolean.",
 	}
 }
 
@@ -178,17 +192,18 @@ func checkComputedExpression(
 	max int,
 	seen map[ast.Expr]bool,
 ) {
-	message := "Computed value has too many operators. Extract it into a named value."
-	checkOperatorLimit(
-		pass,
-		expression,
-		max,
-		computedValueOperators,
-		seen,
-		"LEG012",
-		"no-computed-values",
-		message,
-	)
+	limit := computedOperatorLimit(max)
+	checkOperatorLimit(pass, expression, seen, limit)
+}
+
+func computedOperatorLimit(max int) operatorLimit {
+	return operatorLimit{
+		max:     max,
+		mode:    computedValueOperators,
+		code:    "LEG012",
+		rule:    "no-computed-values",
+		message: "Computed value has too many operators. Extract it into a named value.",
+	}
 }
 
 func compositeValue(expression ast.Expr) ast.Expr {
@@ -203,28 +218,32 @@ func compositeValue(expression ast.Expr) ast.Expr {
 func checkOperatorLimit(
 	pass *analysis.Pass,
 	expression ast.Expr,
-	max int,
-	mode operatorMode,
 	seen map[ast.Expr]bool,
-	code string,
-	rule string,
-	message string,
+	limit operatorLimit,
 ) {
-	if expression == nil {
-		return
-	}
-
-	if seen[expression] {
+	if expressionAlreadyChecked(expression, seen) {
 		return
 	}
 
 	seen[expression] = true
-	count := countOperators(expression, mode)
-	if count <= max {
+	if !exceedsOperatorLimit(expression, limit) {
 		return
 	}
 
-	report(pass, expression, code, rule, message)
+	report(pass, expression, limit.code, limit.rule, limit.message)
+}
+
+func expressionAlreadyChecked(expression ast.Expr, seen map[ast.Expr]bool) bool {
+	if expression == nil {
+		return true
+	}
+
+	return seen[expression]
+}
+
+func exceedsOperatorLimit(expression ast.Expr, limit operatorLimit) bool {
+	count := countOperators(expression, limit.mode)
+	return count > limit.max
 }
 
 func countOperators(expression ast.Expr, mode operatorMode) int {

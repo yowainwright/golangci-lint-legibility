@@ -60,6 +60,7 @@ linters:
           min-switch-chain-length: 3
           max-if-init-operators: 0
           max-composite-literal-arg-depth: 1
+          max-function-lines: 20
           disabled-rules:
             - prefer-guard-clauses
 ```
@@ -72,6 +73,55 @@ Run:
 ```
 
 See the `golangci-lint` [module plugin docs](https://golangci-lint.run/plugins/module-plugins/) for the custom binary workflow.
+
+## Trust
+
+<!-- release and provenance guarantees derived from .github/workflows/release.yml, .goreleaser.yaml, and LICENSE -->
+
+Releases are built from pushed `v*` tags by GitHub Actions. The release workflow runs formatting, `go vet`, tests, and this linter against itself before publishing.
+
+GoReleaser publishes a source archive and `checksums.txt`. This package does not publish a standalone binary because consumers build their own custom `golangci-lint` binary from the released Go module.
+
+Release artifacts are covered by GitHub artifact attestations. They use short-lived OIDC/Sigstore credentials from GitHub Actions instead of long-lived signing secrets.
+
+Verify a release:
+
+```sh
+gh release download v0.1.0 \
+  --repo yowainwright/golangci-lint-legibility \
+  --pattern "golangci-lint-legibility_*_source.tar.gz" \
+  --pattern "checksums.txt"
+
+sha256sum -c checksums.txt
+
+gh attestation verify golangci-lint-legibility_0.1.0_source.tar.gz \
+  --repo yowainwright/golangci-lint-legibility
+```
+
+OpenSSF Scorecard runs weekly and reports supply-chain posture through GitHub code scanning.
+
+## Release
+
+<!-- release commands derived from .goreleaser.yaml and .github/workflows/release.yml -->
+
+Create a release by tagging the module:
+
+```sh
+go mod tidy
+make fmt-check
+make vet
+make test
+make lint
+
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The pushed tag triggers GoReleaser. After the workflow finishes, warm the Go module proxy:
+
+```sh
+GOPROXY=proxy.golang.org go list -m github.com/yowainwright/golangci-lint-legibility@v0.1.0
+```
 
 ## Settings
 
@@ -92,6 +142,7 @@ See the `golangci-lint` [module plugin docs](https://golangci-lint.run/plugins/m
 | `min-switch-chain-length` | 3 | Minimum repeated comparison chain length before suggesting `switch`. |
 | `max-if-init-operators` | 0 | Maximum boolean operators when an `if` also has an initializer. |
 | `max-composite-literal-arg-depth` | 1 | Maximum nested composite literal depth in call arguments. |
+| `max-function-lines` | 20 | Maximum source lines in a function declaration or literal; nested literals are measured independently. |
 | `negative-condition-name-pattern` | built in | Regular expression for negative boolean names. |
 
 Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name.
@@ -123,6 +174,7 @@ Each rule has an inline do / don't diff example in [Examples](#examples).
 | [`LEG035`](#leg035-no-bool-literal-args) | `no-bool-literal-args` | Avoid boolean literals as call arguments. |
 | [`LEG036`](#leg036-no-complex-if-init) | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
 | [`LEG037`](#leg037-no-deep-composite-literal-arg) | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
+| [`LEG038`](#leg038-max-function-lines) | `max-function-lines` | Limit functions to a focused line budget. |
 
 ## Examples
 
@@ -420,6 +472,30 @@ Opt-in. Enable it with `enabled-rules` when the project uses directory-mirrored 
 - save(Config{HTTP: HTTPConfig{Timeout: 10}})
 + httpConfig := HTTPConfig{Timeout: 10}
 + save(Config{HTTP: httpConfig})
+```
+
+---
+
+### `LEG038 max-function-lines`
+
+#### do / don't
+
+```diff
+- func syncUser(user User) error {
+- 	validateUser(user)
+- 	normalizeUser(&user)
+- 	saveUser(user)
+- 	sendWelcomeEmail(user)
+- 	writeAuditLog(user)
+- 	refreshSearchIndex(user)
+- 	return nil
+- }
++ func syncUser(user User) error {
++ 	if err := prepareUser(&user); err != nil {
++ 		return err
++ 	}
++ 	return persistUser(user)
++ }
 ```
 
 ## Develop

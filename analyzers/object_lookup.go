@@ -45,24 +45,36 @@ func checkObjectLookupExpression(
 	expression *ast.BinaryExpr,
 	min int,
 ) {
-	if expression.Op != token.LOR {
-		return
-	}
-
-	if isNestedOr(parents, expression) {
+	if !isTopLevelOrExpression(parents, expression) {
 		return
 	}
 
 	parts := collectLookupParts(pass, expression)
+	if !hasObjectLookupParts(parts, min) {
+		return
+	}
+
+	reportObjectLookup(pass, expression)
+}
+
+func isTopLevelOrExpression(parents map[ast.Node]ast.Node, expression *ast.BinaryExpr) bool {
+	if expression.Op != token.LOR {
+		return false
+	}
+
+	return !isNestedOr(parents, expression)
+}
+
+func hasObjectLookupParts(parts []lookupPart, min int) bool {
 	hasEnoughParts := len(parts) >= min
 	if !hasEnoughParts {
-		return
+		return false
 	}
 
-	if !sameLookupKey(parts) {
-		return
-	}
+	return sameLookupKey(parts)
+}
 
+func reportObjectLookup(pass *analysis.Pass, expression ast.Expr) {
 	report(
 		pass,
 		expression,
