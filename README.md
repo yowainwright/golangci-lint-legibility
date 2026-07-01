@@ -30,6 +30,17 @@ Build the custom binary:
 golangci-lint custom
 ```
 
+## Homebrew
+
+<!-- Homebrew tap commands derived from Formula/golangci-lint-legibility.rb -->
+
+Install the custom binary from this repository as a tap:
+
+```sh
+brew tap yowainwright/golangci-lint-legibility https://github.com/yowainwright/golangci-lint-legibility
+brew install golangci-lint-legibility
+```
+
 ## Configure
 
 <!-- golangci-lint configuration derived from .golangci.yml and analyzers/settings.go -->
@@ -78,9 +89,11 @@ See the `golangci-lint` [module plugin docs](https://golangci-lint.run/plugins/m
 
 <!-- release and provenance guarantees derived from .github/workflows/release.yml, .goreleaser.yaml, and LICENSE -->
 
-Releases are built from pushed `v*` tags by GitHub Actions. The release workflow runs formatting, `go vet`, tests, and this linter against itself before publishing.
+Releases are built from pushed `v*` tags by GitHub Actions. Release tags are protected from updates and deletion, and only the repository owner can create matching release tags.
 
-GoReleaser publishes a source archive and `checksums.txt`. This package does not publish a standalone binary because consumers build their own custom `golangci-lint` binary from the released Go module.
+The release workflow runs `go mod tidy` drift checks, formatting, `go vet`, tests, and this linter against itself before publishing. Release jobs use pinned GitHub Actions, least-privilege permissions, and a main-branch ancestry check before publishing.
+
+GoReleaser publishes a source archive and `checksums.txt`. GitHub releases do not publish a standalone binary; the Homebrew formula builds a custom `golangci-lint` binary from the released source.
 
 Release artifacts are covered by GitHub artifact attestations. They use short-lived OIDC/Sigstore credentials from GitHub Actions instead of long-lived signing secrets.
 
@@ -104,16 +117,13 @@ OpenSSF Scorecard runs weekly and reports supply-chain posture through GitHub co
 
 <!-- release commands derived from .goreleaser.yaml and .github/workflows/release.yml -->
 
-Create a release by tagging the module:
+Create a release by signing and pushing a `v*` tag:
 
 ```sh
 go mod tidy
-make fmt-check
-make vet
-make test
-make lint
+make check
 
-git tag v0.1.0
+git tag -s v0.1.0
 git push origin v0.1.0
 ```
 
@@ -503,6 +513,7 @@ Opt-in. Enable it with `enabled-rules` when the project uses directory-mirrored 
 <!-- development commands derived from Makefile -->
 
 ```sh
+make tidy-check
 make test
 make vet
 make lint
