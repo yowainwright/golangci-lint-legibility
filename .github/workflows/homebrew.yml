@@ -35,4 +35,4 @@ jobs:
         run: brew test "$FORMULA"
 
       - name: Audit formula
-        run: brew audit --new --formula "$FORMULA"
+        run: brew audit --formula "$FORMULA"

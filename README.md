@@ -133,6 +133,8 @@ The pushed tag triggers GoReleaser. After the workflow finishes, warm the Go mod
 GOPROXY=proxy.golang.org go list -m github.com/yowainwright/golangci-lint-legibility@v0.1.0
 ```
 
+Update the Homebrew formula for each release by replacing the source archive URL and checksum in `Formula/golangci-lint-legibility.rb`. `brew livecheck golangci-lint-legibility` reads the latest GitHub release for update detection.
+
 ## Settings
 
 <!-- settings derived from analyzers/settings.go -->

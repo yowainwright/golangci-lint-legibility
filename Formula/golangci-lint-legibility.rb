@@ -10,6 +10,11 @@ class GolangciLintLegibility < Formula
   sha256 source_sha
   license "MIT"
 
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
   depends_on "golangci-lint" => :build
   depends_on "go"
 
