@@ -25,6 +25,9 @@ jobs:
       - name: Tap formula
         run: brew tap "$TAP" "$GITHUB_WORKSPACE"
 
+      - name: Trust tap
+        run: brew trust --tap "$TAP"
+
       - name: Install formula from source
         run: brew install --build-from-source "$FORMULA"
 
