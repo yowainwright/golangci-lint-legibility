@@ -19,6 +19,7 @@ class GolangciLintLegibility < Formula
   depends_on "go"
 
   def install
+    ENV["GOFLAGS"] = "-buildvcs=false"
     system "golangci-lint", "custom"
     bin.install "bin/legibility-golangci-lint"
   end
