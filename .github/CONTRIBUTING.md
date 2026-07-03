@@ -8,6 +8,7 @@ Install Go and `golangci-lint` v2, then run:
 
 ```sh
 go mod download
+make tidy-check
 make test
 make vet
 make lint
