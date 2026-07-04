@@ -83,7 +83,7 @@ Run:
 ./bin/legibility-golangci-lint fmt ./...
 ```
 
-See the `golangci-lint` [module plugin docs](https://golangci-lint.run/plugins/module-plugins/) for the custom binary workflow.
+See the `golangci-lint` [module plugin docs](https://golangci-lint.run/docs/plugins/module-plugins/) for the custom binary workflow. Module plugins require a build step because the plugin and host binary must share the same Go toolchain version and build environment.
 
 ## Trust
 
