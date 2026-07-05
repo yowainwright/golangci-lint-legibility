@@ -54,3 +54,6 @@ jobs:
 
       - name: Run custom linter
         run: make lint
+
+      - name: Vulnerability check
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./...
