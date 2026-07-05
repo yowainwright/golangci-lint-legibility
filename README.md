@@ -85,6 +85,27 @@ Run:
 
 See the `golangci-lint` [module plugin docs](https://golangci-lint.run/docs/plugins/module-plugins/) for the custom binary workflow. Module plugins require a build step because the plugin and host binary must share the same Go toolchain version and build environment.
 
+## Performance
+
+Lint only changed files on PRs — 50–75% faster:
+
+```sh
+golangci-lint run --new-from-merge-base=main ./...
+```
+
+Cache `~/.cache/golangci-lint` between CI runs to avoid cold-start overhead. Example for GitHub Actions:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ~/.cache/golangci-lint
+    key: golangci-lint-${{ hashFiles('**/*.go') }}
+```
+
+## Troubleshooting
+
+**Build step fails or binary crashes at runtime** — the plugin and `golangci-lint` must be built with the same Go toolchain. Run `go version` and confirm your toolchain matches the version in `go.mod`.
+
 ## Trust
 
 <!-- release and provenance guarantees derived from .github/workflows/release.yml, .goreleaser.yaml, and LICENSE -->
