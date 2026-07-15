@@ -22,6 +22,14 @@ linters:
           max-if-init-operators: 0
           max-composite-literal-arg-depth: 1
           max-function-lines: 20
+          comment-matchers:
+            - '\b(ENG|OPS)-\d+\b'
+          comment-prefix-identifiers:
+            - HUMAN
+            - LEGAL
+            - SECURITY
+          comment-suffix-identifiers:
+            - '@owned'
 
 formatters:
   enable:

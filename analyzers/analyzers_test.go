@@ -179,6 +179,14 @@ func TestRequireFilenameMatchesDirnameIsOptIn(t *testing.T) {
 	}
 }
 
+func TestNoUnmatchedCommentsIsOptInWithoutPolicy(t *testing.T) {
+	for _, analyzer := range New(Settings{}) {
+		if analyzer.Name == analysisName("no-unmatched-comments") {
+			t.Fatal("no-unmatched-comments should be opt-in without a configured policy")
+		}
+	}
+}
+
 func TestSpecialRuleSelectorsIgnoreCase(t *testing.T) {
 	selectors := []string{"All", "ALL", "leg"}
 	for _, selector := range selectors {
