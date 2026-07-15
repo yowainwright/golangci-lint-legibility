@@ -48,6 +48,20 @@ func (s Settings) automatedCommentIdentifiers() []string {
 	return defaultAutomatedCommentIdentifiers
 }
 
+func (s Settings) hasCommentPolicy() bool {
+	hasMatchers := len(s.CommentMatchers) > 0
+	if hasMatchers {
+		return true
+	}
+
+	hasPrefixes := len(s.CommentPrefixIdentifiers) > 0
+	if hasPrefixes {
+		return true
+	}
+
+	return len(s.CommentSuffixIdentifiers) > 0
+}
+
 func (s Settings) RuleEnabled(code string, name string, defaultEnabled bool) bool {
 	selected := defaultEnabled
 	if len(s.EnabledRules) > 0 {

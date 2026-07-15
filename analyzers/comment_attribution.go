@@ -46,7 +46,12 @@ func checkAutomatedAttributionInFile(
 	file *ast.File,
 	identifiers []string,
 ) {
+	ignored := cgoCommentGroups(file)
 	for _, group := range file.Comments {
+		if commentGroupIgnored(file, group, ignored) {
+			continue
+		}
+
 		identifier := findProhibitedAttribution(commentGroupValue(group), identifiers)
 		if identifier != "" {
 			reportAutomatedAttribution(pass, group, identifier)
@@ -126,18 +131,22 @@ func hasGenerationSignature(value string, identifier string) bool {
 
 func hasGenerationVerbSignature(value string, identifier string, verb string) bool {
 	leadingPhrase := identifier + " " + verb
-	passivePhrase := verb + " by " + identifier
-	passiveArticlePhrase := verb + " by a " + identifier
-	passiveVowelArticlePhrase := verb + " by an " + identifier
-	phrases := []string{
-		leadingPhrase,
-		passivePhrase,
-		passiveArticlePhrase,
-		passiveVowelArticlePhrase,
+	if containsWholePhrase(value, leadingPhrase) {
+		return true
 	}
 
-	for _, phrase := range phrases {
-		if containsWholePhrase(value, phrase) {
+	return hasPassiveGenerationSignature(value, identifier, verb)
+}
+
+func hasPassiveGenerationSignature(value string, identifier string, verb string) bool {
+	if !containsTrailingPhrase(value, identifier) {
+		return false
+	}
+
+	prefix := strings.TrimSpace(strings.TrimSuffix(value, identifier))
+	verbPhrases := []string{verb + " by", verb + " by a", verb + " by an"}
+	for _, phrase := range verbPhrases {
+		if containsTrailingPhrase(prefix, phrase) {
 			return true
 		}
 	}
@@ -164,4 +173,10 @@ func containsWholePhrase(value string, phrase string) bool {
 	paddedValue := " " + value + " "
 	paddedPhrase := " " + phrase + " "
 	return strings.Contains(paddedValue, paddedPhrase)
+}
+
+func containsTrailingPhrase(value string, phrase string) bool {
+	paddedValue := " " + value
+	paddedPhrase := " " + phrase
+	return strings.HasSuffix(paddedValue, paddedPhrase)
 }

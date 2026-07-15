@@ -15,10 +15,12 @@ import (
 var generatedCommentPattern = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`)
 
 func newNoUnmatchedComments(settings Settings) ruleSpec {
-	return newAnalyzer(
+	defaultEnabled := settings.hasCommentPolicy()
+	return newRuleSpec(
 		"LEG039",
 		"no-unmatched-comments",
 		"Reject comments without an allowed matcher or boundary identifier.",
+		defaultEnabled,
 		func(pass *analysis.Pass) (any, error) {
 			checkUnmatchedComments(pass, settings)
 			return nil, nil
@@ -151,8 +153,8 @@ func isMetadataComment(file *ast.File, comment *ast.Comment) bool {
 
 	isDirective := isGoDirective(body)
 	isBuildConstraint := isLegacyBuildConstraint(body)
-	isBareNolint := body == "nolint"
-	isToolMetadata := isDirective || isBuildConstraint || isBareNolint
+	isNolint := isNolintDirective(body)
+	isToolMetadata := isDirective || isBuildConstraint || isNolint
 	if isToolMetadata {
 		return true
 	}
@@ -166,15 +168,9 @@ func isGoDirective(body string) bool {
 		return true
 	}
 
-	colon := strings.Index(body, ":")
-	hasTool := colon > 0
-	hasDirective := colon+1 < len(body)
-	isWellFormed := hasTool && hasDirective
-	if !isWellFormed {
-		return false
-	}
-
-	return hasValidDirectiveName(body, colon)
+	directive, isGoDirective := strings.CutPrefix(body, "go:")
+	hasDirective := directive != ""
+	return isGoDirective && hasDirective
 }
 
 func hasLegacyDirectivePrefix(body string) bool {
@@ -188,24 +184,13 @@ func hasLegacyDirectivePrefix(body string) bool {
 	return false
 }
 
-func hasValidDirectiveName(body string, colon int) bool {
-	for index := 0; index <= colon+1; index++ {
-		if index == colon {
-			continue
-		}
-
-		if !isLowerAlphaNumeric(body[index]) {
-			return false
-		}
+func isNolintDirective(body string) bool {
+	isBare := body == "nolint"
+	if isBare {
+		return true
 	}
 
-	return true
-}
-
-func isLowerAlphaNumeric(character byte) bool {
-	isLower := character >= 'a' && character <= 'z'
-	isDigit := character >= '0' && character <= '9'
-	return isLower || isDigit
+	return strings.HasPrefix(body, "nolint:")
 }
 
 func isLegacyBuildConstraint(body string) bool {
@@ -314,7 +299,7 @@ func normalizeCommentLine(line string) string {
 	normalized := strings.TrimLeftFunc(line, unicode.IsSpace)
 	withoutStar, hasStar := strings.CutPrefix(normalized, "*")
 	if !hasStar {
-		return line
+		return normalized
 	}
 
 	return strings.TrimPrefix(withoutStar, " ")

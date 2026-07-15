@@ -190,7 +190,7 @@ Update the Homebrew formula for each release by replacing the source archive URL
 | `automated-comment-identifiers` | built in | Names treated as automated sources in explicit source signatures. |
 | `negative-condition-name-pattern` | built in | Regular expression for negative boolean names. |
 
-Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name.
+Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name. `no-unmatched-comments` activates when an allow path is configured or when the rule is explicitly selected.
 
 ## Rules
 
@@ -220,7 +220,7 @@ Each rule has an inline do / don't diff example in [Examples](#examples).
 | [`LEG036`](#leg036-no-complex-if-init) | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
 | [`LEG037`](#leg037-no-deep-composite-literal-arg) | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
 | [`LEG038`](#leg038-max-function-lines) | `max-function-lines` | Limit functions to a focused line budget. |
-| [`LEG039`](#leg039-no-unmatched-comments) | `no-unmatched-comments` | Reject comments without an allowed matcher or boundary identifier. |
+| [`LEG039`](#leg039-no-unmatched-comments) | `no-unmatched-comments` | Policy opt-in. Reject comments without an allowed matcher or boundary identifier. |
 | [`LEG040`](#leg040-no-automated-comment-attribution) | `no-automated-comment-attribution` | Reject explicit automated source signatures in comments. |
 | [`LEG041`](#leg041-prefer-line-comments) | `prefer-line-comments` | Prefer `//` comments for ordinary multiline prose. |
 
@@ -228,13 +228,13 @@ Each rule has an inline do / don't diff example in [Examples](#examples).
 
 The comment rules form one policy stack. No ownership marker is preferred by the linter; repositories configure the convention that fits their workflow.
 
-`no-unmatched-comments` checks each Go comment group as one unit. Consecutive `//` lines can use one prefix on the first line or one suffix on the last line. A group is accepted when any configured regular expression, prefix identifier, or suffix identifier matches. With no configured allow path, every ordinary comment is rejected.
+`no-unmatched-comments` checks each Go comment group as one unit. Consecutive `//` lines can use one prefix on the first line or one suffix on the last line. A group is accepted when any configured regular expression, prefix identifier, or suffix identifier matches. The rule activates when an allow path is configured. Explicitly selecting it with no allow path rejects every ordinary comment.
 
 Matchers use Go regular-expression syntax, run case-insensitively against comment text without delimiters, and ignore invalid patterns. Prefix and suffix identifiers are literal, case-insensitive, and require a Go identifier boundary. Empty identifiers do not match.
 
 The ownership rule leaves syntax and tool metadata alone:
 
-- Go tool, compiler, cgo, and line directives.
+- `//go:` compiler and tool directives, `//line`, `//extern`, `//export`, and `//nolint` directives.
 - Legacy `// +build` constraints.
 - Exact `// Code generated ... DO NOT EDIT.` markers before the package clause.
 - Comment groups used as cgo preambles for `import "C"`.
