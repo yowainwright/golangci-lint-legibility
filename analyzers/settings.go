@@ -21,6 +21,10 @@ const (
 type Settings struct {
 	EnabledRules                 []string `json:"enabled-rules"`
 	DisabledRules                []string `json:"disabled-rules"`
+	CommentMatchers              []string `json:"comment-matchers"`
+	CommentPrefixIdentifiers     []string `json:"comment-prefix-identifiers"`
+	CommentSuffixIdentifiers     []string `json:"comment-suffix-identifiers"`
+	AutomatedCommentIdentifiers  []string `json:"automated-comment-identifiers"`
 	MaxExpressionOperators       *int     `json:"max-expression-operators"`
 	MaxIfOperators               *int     `json:"max-if-operators"`
 	MaxControlFlowDepth          *int     `json:"max-control-flow-depth"`
@@ -34,6 +38,14 @@ type Settings struct {
 	MaxCompositeLiteralArgDepth  *int     `json:"max-composite-literal-arg-depth"`
 	MaxFunctionLines             *int     `json:"max-function-lines"`
 	NegativeConditionNamePattern string   `json:"negative-condition-name-pattern"`
+}
+
+func (s Settings) automatedCommentIdentifiers() []string {
+	if s.AutomatedCommentIdentifiers != nil {
+		return s.AutomatedCommentIdentifiers
+	}
+
+	return defaultAutomatedCommentIdentifiers
 }
 
 func (s Settings) RuleEnabled(code string, name string, defaultEnabled bool) bool {

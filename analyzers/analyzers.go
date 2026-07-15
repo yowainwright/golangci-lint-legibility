@@ -55,6 +55,9 @@ func goRuleSpecs(settings Settings) []ruleSpec {
 		newNoComplexIfInit(settings),
 		newNoDeepCompositeLiteralArg(settings),
 		newMaxFunctionLines(settings),
+		newNoUnmatchedComments(settings),
+		newNoAutomatedCommentAttribution(settings),
+		newPreferLineComments(),
 	}
 }
 
