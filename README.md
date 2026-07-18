@@ -93,6 +93,85 @@ Run:
 
 See the `golangci-lint` [module plugin docs](https://golangci-lint.run/docs/plugins/module-plugins/) for the custom binary workflow. Module plugins require a build step because the plugin and host binary must share the same Go toolchain version and build environment.
 
+## Recipes
+
+<!-- workflow recipes derived from golangci-lint run flags, .github/workflows/ci.yml, and comment policy settings in analyzers/settings.go -->
+
+Use one committed `.golangci.yml` in every context. Change the scope and whether diagnostics block the workflow, not the rules or thresholds each context sees. Local feedback then stays representative of CI.
+
+The examples use `./bin/legibility-golangci-lint`. Replace it with `golangci-lint-legibility` when using the Homebrew installation.
+
+| Context | Scope | Enforcement |
+| --- | --- | --- |
+| Agent edit loop | New issues in the working tree | Blocking |
+| Human exploration | New issues in the working tree | Advisory |
+| Pre-commit | Changes since `HEAD` | Blocking |
+| CI | Entire repository | Blocking |
+
+### Agents
+
+Run the linter after each coherent Go edit:
+
+```sh
+./bin/legibility-golangci-lint run --new ./...
+```
+
+`--new` reports issues in uncommitted changes, or in `HEAD~` when the working tree is clean. Agents should fix diagnostics introduced by their edits. They must not add ownership identifiers, broaden matchers, or add `//nolint` directives merely to pass lint.
+
+Agents can read and preserve comments accepted by the repository policy. An unmatched comment introduced during the session should be removed or replaced by clearer code. Pre-existing diagnostics outside the task should be reported rather than suppressed or rewritten.
+
+### Humans
+
+Use advisory mode while exploring a change:
+
+```sh
+./bin/legibility-golangci-lint run --new --issues-exit-code=0 ./...
+```
+
+Before sharing or committing the change, remove advisory mode:
+
+```sh
+./bin/legibility-golangci-lint run --new ./...
+```
+
+Humans can use the configured prefix or suffix identifiers for comments that preserve intentional context. Keep regular-expression matchers narrow and reserve them for project conventions such as ticket references and tool directives. Reserve `//nolint:legibility` for an isolated false positive with an explanation.
+
+### Pre-commit
+
+Use the blocking form in the hook runner of your choice:
+
+```sh
+./bin/legibility-golangci-lint run --new-from-rev=HEAD ./...
+```
+
+This checks the current changes against `HEAD`. Keep the committed configuration identical to CI so a passing hook predicts a passing build.
+
+### CI
+
+Build the pinned custom binary, then lint the whole repository:
+
+```sh
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+golangci-lint custom
+./bin/legibility-golangci-lint run ./...
+```
+
+For a large repository with an existing baseline, fetch the base branch and block only new PR diagnostics:
+
+```sh
+git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+./bin/legibility-golangci-lint run --new-from-merge-base=origin/main ./...
+```
+
+Do not use `--issues-exit-code=0` in a required CI check. Cache Go modules and the `golangci-lint` cache as described in [Performance](#performance).
+
+### Gradual adoption
+
+1. Run `./bin/legibility-golangci-lint run --issues-exit-code=0 ./...` to inventory the baseline.
+2. Tune thresholds and exclusions for the repository without creating context-specific configs.
+3. Configure comment ownership only when the repository has chosen its matcher or identifier convention.
+4. Fix the remaining diagnostics, remove advisory mode, and make the full CI check required.
+
 ## Performance
 
 Lint only changed files on PRs — 50–75% faster:
