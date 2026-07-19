@@ -127,15 +127,15 @@ See the `golangci-lint` [module plugin docs](https://golangci-lint.run/docs/plug
 
 ## Recipes
 
-<!-- workflow recipes derived from golangci-lint run flags, .github/workflows/ci.yml, and comment policy settings in analyzers/settings.go -->
+<!-- workflow recipes derived from consumer binary names, golangci-lint run flags, CI checkout behavior, and comment policy settings -->
 
 Use one committed `.golangci.yml` in every context. Change the scope and whether diagnostics block the workflow, not the rules or thresholds each context sees. Local feedback then stays representative of CI.
 
-The examples use `./bin/legibility-golangci-lint`. Replace it with `golangci-lint-legibility` when using the Homebrew installation.
+The examples use `./bin/legibility-golangci-lint`. Homebrew installs the same executable on `PATH`, so use `legibility-golangci-lint` without the `./bin/` prefix.
 
 | Context | Scope | Enforcement |
 | --- | --- | --- |
-| Agent edit loop | New issues in the working tree | Blocking |
+| Agent edit loop | Changes since `HEAD` | Blocking |
 | Human exploration | New issues in the working tree | Advisory |
 | Pre-commit | Changes since `HEAD` | Blocking |
 | CI | Entire repository | Blocking |
@@ -145,10 +145,10 @@ The examples use `./bin/legibility-golangci-lint`. Replace it with `golangci-lin
 Run the linter after each coherent Go edit:
 
 ```sh
-./bin/legibility-golangci-lint run --new ./...
+./bin/legibility-golangci-lint run --new-from-rev=HEAD ./...
 ```
 
-`--new` reports issues in uncommitted changes, or in `HEAD~` when the working tree is clean. Agents should fix diagnostics introduced by their edits. They must not add ownership identifiers, broaden matchers, or add `//nolint` directives merely to pass lint.
+`--new-from-rev=HEAD` includes staged, unstaged, and untracked changes. Agents should fix diagnostics introduced by their edits. They must not add ownership identifiers, broaden matchers, or add `//nolint` directives merely to pass lint.
 
 Agents can read and preserve comments accepted by the repository policy. An unmatched comment introduced during the session should be removed or replaced by clearer code. Pre-existing diagnostics outside the task should be reported rather than suppressed or rewritten.
 
@@ -163,7 +163,7 @@ Use advisory mode while exploring a change:
 Before sharing or committing the change, remove advisory mode:
 
 ```sh
-./bin/legibility-golangci-lint run --new ./...
+./bin/legibility-golangci-lint run --new-from-rev=HEAD ./...
 ```
 
 Humans can use the configured prefix or suffix identifiers for comments that preserve intentional context. Keep regular-expression matchers narrow and reserve them for project conventions such as ticket references and tool directives. Reserve `//nolint:legibility` for an isolated false positive with an explanation.
@@ -188,7 +188,14 @@ golangci-lint custom
 ./bin/legibility-golangci-lint run ./...
 ```
 
-For a large repository with an existing baseline, fetch the base branch and block only new PR diagnostics:
+For a large repository with an existing baseline, retain full Git history before blocking only new PR diagnostics. Configure `actions/checkout` to keep full history:
+
+```yaml
+with:
+  fetch-depth: 0
+```
+
+Fetching only `origin/main` cannot repair a shallow PR head. Refresh the base branch before running merge-base mode:
 
 ```sh
 git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
@@ -199,10 +206,19 @@ Do not use `--issues-exit-code=0` in a required CI check. Cache Go modules and t
 
 ### Gradual adoption
 
-1. Run `./bin/legibility-golangci-lint run --issues-exit-code=0 ./...` to inventory the baseline.
-2. Tune thresholds and exclusions for the repository without creating context-specific configs.
-3. Configure comment ownership only when the repository has chosen its matcher or identifier convention.
-4. Fix the remaining diagnostics, remove advisory mode, and make the full CI check required.
+Start with an advisory inventory that disables both output caps:
+
+```sh
+./bin/legibility-golangci-lint run \
+  --issues-exit-code=0 \
+  --max-issues-per-linter=0 \
+  --max-same-issues=0 \
+  ./...
+```
+
+1. Tune thresholds and exclusions for the repository without creating context-specific configs.
+2. Configure comment ownership only when the repository has chosen its matcher or identifier convention.
+3. Fix the remaining diagnostics, remove advisory mode, and make the full CI check required.
 
 ## Performance
 
