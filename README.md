@@ -41,6 +41,38 @@ brew tap yowainwright/golangci-lint-legibility https://github.com/yowainwright/g
 brew install golangci-lint-legibility
 ```
 
+## Rules
+
+<!-- rules derived from analyzers/analyzers.go and analyzer constructors -->
+
+Each rule has an inline do / don't diff example in [Examples](#examples).
+
+| Code | Rule | Summary |
+| --- | --- | --- |
+| [`LEG001`](#leg001-max-expression-operators) | `max-expression-operators` | Limit operators inside a single expression. |
+| [`LEG002`](#leg002-hoist-if-operators) | `hoist-if-operators` | Prefer named booleans before operator-heavy conditions. |
+| [`LEG003`](#leg003-max-control-flow-depth) | `max-control-flow-depth` | Limit nested control-flow depth. |
+| [`LEG005`](#leg005-no-quadratic-patterns) | `no-quadratic-patterns` | Flag likely quadratic nested loops. |
+| [`LEG006`](#leg006-no-redundant-boolean-logic) | `no-redundant-boolean-logic` | Avoid redundant boolean comparisons. |
+| [`LEG007`](#leg007-prefer-positive-condition-names) | `prefer-positive-condition-names` | Prefer positive condition names. |
+| [`LEG008`](#leg008-no-trivial-wrapper-functions) | `no-trivial-wrapper-functions` | Avoid functions that only forward parameters to another call. |
+| [`LEG009`](#leg009-prefer-early-return) | `prefer-early-return` | Avoid else branches after a branch already exits. |
+| [`LEG010`](#leg010-prefer-guard-clauses) | `prefer-guard-clauses` | Prefer guard clauses over wrapping the main path in one large if block. |
+| [`LEG011`](#leg011-max-array-chain-depth) | `max-array-chain-depth` | Limit consecutive collection-style method chains. |
+| [`LEG012`](#leg012-no-computed-values) | `no-computed-values` | Prefer named values before returning computed expressions. |
+| [`LEG024`](#leg024-prefer-object-lookup) | `prefer-object-lookup` | Prefer set or map lookups over long equality-or chains. |
+| [`LEG025`](#leg025-require-filename-matches-dirname) | `require-filename-matches-dirname` | Opt-in. Require files in named subdirectories to match the directory name. |
+| [`LEG026`](#leg026-no-mixed-filename-casing) | `no-mixed-filename-casing` | Avoid filenames that mix casing conventions. |
+| [`LEG031`](#leg031-no-deep-selector-chain) | `no-deep-selector-chain` | Avoid deep selector or index chains without named intermediate values. |
+| [`LEG034`](#leg034-prefer-switch-over-long-if-chain) | `prefer-switch-over-long-if-chain` | Prefer switch over long if chains that compare the same value. |
+| [`LEG035`](#leg035-no-bool-literal-args) | `no-bool-literal-args` | Avoid boolean literals as call arguments. |
+| [`LEG036`](#leg036-no-complex-if-init) | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
+| [`LEG037`](#leg037-no-deep-composite-literal-arg) | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
+| [`LEG038`](#leg038-max-function-lines) | `max-function-lines` | Limit functions to a focused line budget. |
+| [`LEG039`](#leg039-no-unmatched-comments) | `no-unmatched-comments` | Policy opt-in. Reject comments without an allowed matcher or boundary identifier. |
+| [`LEG040`](#leg040-no-automated-comment-attribution) | `no-automated-comment-attribution` | Reject explicit automated source signatures in comments. |
+| [`LEG041`](#leg041-prefer-line-comments) | `prefer-line-comments` | Prefer `//` comments for ordinary multiline prose. |
+
 ## Configure
 
 <!-- golangci-lint configuration derived from .golangci.yml and analyzers/settings.go -->
@@ -270,38 +302,6 @@ Update the Homebrew formula for each release by replacing the source archive URL
 | `negative-condition-name-pattern` | built in | Regular expression for negative boolean names. |
 
 Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name. `no-unmatched-comments` activates when an allow path is configured or when the rule is explicitly selected.
-
-## Rules
-
-<!-- rules derived from analyzers/analyzers.go and analyzer constructors -->
-
-Each rule has an inline do / don't diff example in [Examples](#examples).
-
-| Code | Rule | Summary |
-| --- | --- | --- |
-| [`LEG001`](#leg001-max-expression-operators) | `max-expression-operators` | Limit operators inside a single expression. |
-| [`LEG002`](#leg002-hoist-if-operators) | `hoist-if-operators` | Prefer named booleans before operator-heavy conditions. |
-| [`LEG003`](#leg003-max-control-flow-depth) | `max-control-flow-depth` | Limit nested control-flow depth. |
-| [`LEG005`](#leg005-no-quadratic-patterns) | `no-quadratic-patterns` | Flag likely quadratic nested loops. |
-| [`LEG006`](#leg006-no-redundant-boolean-logic) | `no-redundant-boolean-logic` | Avoid redundant boolean comparisons. |
-| [`LEG007`](#leg007-prefer-positive-condition-names) | `prefer-positive-condition-names` | Prefer positive condition names. |
-| [`LEG008`](#leg008-no-trivial-wrapper-functions) | `no-trivial-wrapper-functions` | Avoid functions that only forward parameters to another call. |
-| [`LEG009`](#leg009-prefer-early-return) | `prefer-early-return` | Avoid else branches after a branch already exits. |
-| [`LEG010`](#leg010-prefer-guard-clauses) | `prefer-guard-clauses` | Prefer guard clauses over wrapping the main path in one large if block. |
-| [`LEG011`](#leg011-max-array-chain-depth) | `max-array-chain-depth` | Limit consecutive collection-style method chains. |
-| [`LEG012`](#leg012-no-computed-values) | `no-computed-values` | Prefer named values before returning computed expressions. |
-| [`LEG024`](#leg024-prefer-object-lookup) | `prefer-object-lookup` | Prefer set or map lookups over long equality-or chains. |
-| [`LEG025`](#leg025-require-filename-matches-dirname) | `require-filename-matches-dirname` | Opt-in. Require files in named subdirectories to match the directory name. |
-| [`LEG026`](#leg026-no-mixed-filename-casing) | `no-mixed-filename-casing` | Avoid filenames that mix casing conventions. |
-| [`LEG031`](#leg031-no-deep-selector-chain) | `no-deep-selector-chain` | Avoid deep selector or index chains without named intermediate values. |
-| [`LEG034`](#leg034-prefer-switch-over-long-if-chain) | `prefer-switch-over-long-if-chain` | Prefer switch over long if chains that compare the same value. |
-| [`LEG035`](#leg035-no-bool-literal-args) | `no-bool-literal-args` | Avoid boolean literals as call arguments. |
-| [`LEG036`](#leg036-no-complex-if-init) | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
-| [`LEG037`](#leg037-no-deep-composite-literal-arg) | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
-| [`LEG038`](#leg038-max-function-lines) | `max-function-lines` | Limit functions to a focused line budget. |
-| [`LEG039`](#leg039-no-unmatched-comments) | `no-unmatched-comments` | Policy opt-in. Reject comments without an allowed matcher or boundary identifier. |
-| [`LEG040`](#leg040-no-automated-comment-attribution) | `no-automated-comment-attribution` | Reject explicit automated source signatures in comments. |
-| [`LEG041`](#leg041-prefer-line-comments) | `prefer-line-comments` | Prefer `//` comments for ordinary multiline prose. |
 
 ## Comment policy
 
