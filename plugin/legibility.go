@@ -2,7 +2,7 @@ package legibility
 
 import (
 	"github.com/golangci/plugin-module-register/register"
-	"github.com/yowainwright/golangci-lint-legibility/analyzers"
+	"github.com/yowainwright/golangci-lint-legibility/internal/analyzers"
 	"golang.org/x/tools/go/analysis"
 )
 
