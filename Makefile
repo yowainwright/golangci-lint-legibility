@@ -9,10 +9,10 @@ custom:
 	GOFLAGS="$(CUSTOM_GOFLAGS)" golangci-lint custom
 
 fmt:
-	gofmt -w analyzers plugin
+	gofmt -w internal/analyzers plugin
 
 fmt-check:
-	test -z "$$(gofmt -l analyzers plugin)"
+	test -z "$$(gofmt -l internal/analyzers plugin)"
 
 lint: custom
 	GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) ./bin/legibility-golangci-lint run ./...

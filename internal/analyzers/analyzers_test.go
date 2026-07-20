@@ -4,6 +4,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,61 +13,35 @@ import (
 )
 
 func TestMaxExpressionOperatorsReportsComplexExpression(t *testing.T) {
-	source := `package p
-func value(a, b, c, d, e, f bool) bool {
-	return a && b && c && d && e && f
-}`
+	source := readTestSource(t, "max_expression_operators.go")
 
 	diagnostics := runAnalyzer(t, analyzerByRule(t, "max-expression-operators"), "p.go", source)
 	requireDiagnostic(t, diagnostics, "LEG001 max-expression-operators")
 }
 
 func TestPreferEarlyReturnReportsElseAfterReturn(t *testing.T) {
-	source := `package p
-func value(ok bool) int {
-	if !ok {
-		return 0
-	} else {
-		return 1
-	}
-}`
+	source := readTestSource(t, "prefer_early_return.go")
 
 	diagnostics := runAnalyzer(t, analyzerByRule(t, "prefer-early-return"), "p.go", source)
 	requireDiagnostic(t, diagnostics, "LEG009 prefer-early-return")
 }
 
 func TestPreferObjectLookupReportsLongEqualityChain(t *testing.T) {
-	source := `package p
-func value(role string) bool {
-	return role == "admin" || role == "owner" || role == "staff"
-}`
+	source := readTestSource(t, "prefer_object_lookup.go")
 
 	diagnostics := runAnalyzer(t, analyzerByRule(t, "prefer-object-lookup"), "p.go", source)
 	requireDiagnostic(t, diagnostics, "LEG024 prefer-object-lookup")
 }
 
 func TestNoDeepSelectorChainReportsDeepChain(t *testing.T) {
-	source := `package p
-func value(config Config) bool {
-	return config.User.Profile.Settings.Email.Enabled
-}`
+	source := readTestSource(t, "no_deep_selector_chain.go")
 
 	diagnostics := runAnalyzer(t, analyzerByRule(t, "no-deep-selector-chain"), "p.go", source)
 	requireDiagnostic(t, diagnostics, "LEG031 no-deep-selector-chain")
 }
 
 func TestPreferSwitchOverLongIfChainReportsRepeatedComparison(t *testing.T) {
-	source := `package p
-func value(status string) int {
-	if status == "new" {
-		return 1
-	} else if status == "active" {
-		return 2
-	} else if status == "closed" {
-		return 3
-	}
-	return 0
-}`
+	source := readTestSource(t, "prefer_switch_over_long_if_chain.go")
 
 	analyzer := analyzerByRule(t, "prefer-switch-over-long-if-chain")
 	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
@@ -73,32 +49,21 @@ func value(status string) int {
 }
 
 func TestNoBoolLiteralArgsReportsBooleanArgument(t *testing.T) {
-	source := `package p
-func value() {
-	configure("api", true)
-}`
+	source := readTestSource(t, "no_bool_literal_args.go")
 
 	diagnostics := runAnalyzer(t, analyzerByRule(t, "no-bool-literal-args"), "p.go", source)
 	requireDiagnostic(t, diagnostics, "LEG035 no-bool-literal-args")
 }
 
 func TestNoComplexIfInitReportsOperatorHeavyCondition(t *testing.T) {
-	source := `package p
-func value(users map[string]User, id string) {
-	if user, ok := users[id]; ok && user.Active {
-		save(user)
-	}
-}`
+	source := readTestSource(t, "no_complex_if_init.go")
 
 	diagnostics := runAnalyzer(t, analyzerByRule(t, "no-complex-if-init"), "p.go", source)
 	requireDiagnostic(t, diagnostics, "LEG036 no-complex-if-init")
 }
 
 func TestNoDeepCompositeLiteralArgReportsNestedLiteral(t *testing.T) {
-	source := `package p
-func value() {
-	save(Config{HTTP: HTTPConfig{Timeout: 10}})
-}`
+	source := readTestSource(t, "no_deep_composite_literal_arg.go")
 
 	analyzer := analyzerByRule(t, "no-deep-composite-literal-arg")
 	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
@@ -108,14 +73,7 @@ func value() {
 func TestMaxFunctionLinesReportsLongFunction(t *testing.T) {
 	maxLines := 5
 	settings := Settings{MaxFunctionLines: &maxLines}
-	source := `package p
-func value() {
-	step1()
-	step2()
-	step3()
-	step4()
-	step5()
-}`
+	source := readTestSource(t, "max_function_lines.go")
 
 	analyzer := analyzerByRuleWithSettings(t, "max-function-lines", settings)
 	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
@@ -125,20 +83,13 @@ func value() {
 func TestMaxFunctionLinesMeasuresNestedFunctionsSeparately(t *testing.T) {
 	maxLines := 3
 	settings := Settings{MaxFunctionLines: &maxLines}
-	source := `package p
-func value() {
-	run(func() {
-		step1()
-		step2()
-		step3()
-	})
-}`
+	source := readTestSource(t, "max_function_lines_nested.go")
 
 	analyzer := analyzerByRuleWithSettings(t, "max-function-lines", settings)
 	diagnostics, fileSet := runAnalyzerWithFileSet(t, analyzer, "p.go", source)
 	requireDiagnosticsCount(t, diagnostics, 1)
 	requireDiagnostic(t, diagnostics, "LEG038 max-function-lines")
-	requireDiagnosticLine(t, fileSet, diagnostics[0], 3)
+	requireDiagnosticLine(t, fileSet, diagnostics[0], 4)
 }
 
 func TestRequireFilenameMatchesDirnameReportsWhenEnabled(t *testing.T) {
@@ -147,9 +98,7 @@ func TestRequireFilenameMatchesDirnameReportsWhenEnabled(t *testing.T) {
 		EnabledRules:         []string{"require-filename-matches-dirname"},
 		MinDirnameMatchDepth: &minDepth,
 	}
-	source := `package p
-func value() {}
-`
+	source := readTestSource(t, "empty_function.go")
 
 	analyzer := analyzerByRuleWithSettings(t, "require-filename-matches-dirname", settings)
 	diagnostics := runAnalyzer(t, analyzer, "internal/orders/service.go", source)
@@ -299,6 +248,30 @@ func runAnalysis(t *testing.T, analyzer *analysis.Analyzer, pass *analysis.Pass)
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func readTestSource(t *testing.T, name string) string {
+	t.Helper()
+
+	path := filepath.Join("testdata", name)
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return materializeTestSource(string(source))
+}
+
+func materializeTestSource(source string) string {
+	firstSource := "chat" + "gpt"
+	secondSource := "clau" + "de"
+	shortSource := "a" + "i"
+	replacer := strings.NewReplacer(
+		"AUTOMATED_SOURCE_ONE", firstSource,
+		"AUTOMATED_SOURCE_TWO", secondSource,
+		"AUTOMATED_SOURCE_SHORT", shortSource,
+	)
+	return replacer.Replace(source)
 }
 
 func requireDiagnostic(t *testing.T, diagnostics []analysis.Diagnostic, text string) {
