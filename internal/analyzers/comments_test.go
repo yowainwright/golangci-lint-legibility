@@ -48,6 +48,14 @@ func TestNoUnmatchedCommentsIgnoresGoMetadata(t *testing.T) {
 	requireDiagnosticsCount(t, diagnostics, 0)
 }
 
+func TestNoUnmatchedCommentsChecksMalformedBlockLineDirective(t *testing.T) {
+	source := readTestSource(t, "malformed_block_line_directive.go")
+
+	analyzer := explicitNoUnmatchedCommentsAnalyzer(t)
+	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
+	requireDiagnosticsCount(t, diagnostics, 1)
+}
+
 func TestNoUnmatchedCommentsChecksUnknownToolSyntax(t *testing.T) {
 	source := readTestSource(t, "unknown_tool_syntax.go")
 
@@ -82,6 +90,14 @@ func TestNoUnmatchedCommentsChecksMisplacedCgoMarker(t *testing.T) {
 
 func TestNoUnmatchedCommentsIgnoresCgoPreamble(t *testing.T) {
 	source := readTestSource(t, "cgo_preamble.go")
+
+	analyzer := explicitNoUnmatchedCommentsAnalyzer(t)
+	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
+	requireDiagnosticsCount(t, diagnostics, 0)
+}
+
+func TestNoUnmatchedCommentsIgnoresCgoGeneratedUnsafeImport(t *testing.T) {
+	source := readTestSource(t, "cgo_generated_unsafe.go")
 
 	analyzer := explicitNoUnmatchedCommentsAnalyzer(t)
 	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
@@ -175,6 +191,14 @@ func TestPreferLineCommentsReportsMultilineBlockComment(t *testing.T) {
 	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
 	requireDiagnosticsCount(t, diagnostics, 1)
 	requireDiagnostic(t, diagnostics, "LEG041 prefer-line-comments")
+}
+
+func TestPreferLineCommentsReportsMalformedMultilineLineDirective(t *testing.T) {
+	source := readTestSource(t, "malformed_multiline_line_directive.txt")
+
+	analyzer := analyzerByRule(t, "prefer-line-comments")
+	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
+	requireDiagnosticsCount(t, diagnostics, 1)
 }
 
 func TestPreferLineCommentsAllowsSingleLineBlocksAndCgo(t *testing.T) {

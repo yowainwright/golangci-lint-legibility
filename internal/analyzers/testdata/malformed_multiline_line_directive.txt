@@ -1,0 +1,5 @@
+package p
+
+/*line explain
+this workaround*/
+func value() {}
