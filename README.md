@@ -1,12 +1,20 @@
 # golangci-lint-legibility
 
-Syntax-only Go readability and comment-policy rules for `golangci-lint` module plugins.
+<!-- package badges derived from GitHub workflows, go.mod, LICENSE, and release tags -->
 
-This linter flags code that is valid but harder to scan: operator-heavy expressions, deep control flow, long equality chains, negative condition names, trivial wrappers, and similar readability issues.
+[![CI](https://github.com/yowainwright/golangci-lint-legibility/actions/workflows/ci.yml/badge.svg)](https://github.com/yowainwright/golangci-lint-legibility/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/yowainwright/golangci-lint-legibility.svg)](https://pkg.go.dev/github.com/yowainwright/golangci-lint-legibility)
+[![GitHub release](https://img.shields.io/github/v/release/yowainwright/golangci-lint-legibility)](https://github.com/yowainwright/golangci-lint-legibility/releases)
+[![license](https://img.shields.io/github/license/yowainwright/golangci-lint-legibility)](LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/yowainwright/golangci-lint-legibility/badge)](https://scorecard.dev/viewer/?uri=github.com/yowainwright/golangci-lint-legibility)
+
+Syntax-only readability and comment-policy rules for Go. The rules favor named values, shallow control flow, predictable filenames, and comments that match repository policy.
 
 ## Install
 
-`golangci-lint-legibility` is a module plugin. Build a custom `golangci-lint` binary, then run that binary with your normal `golangci-lint` config.
+This project is a `golangci-lint` module plugin. Install it through Homebrew or build a custom `golangci-lint` binary.
+
+### Custom build
 
 <!-- consumer custom-gcl config derived from go.mod module path and plugin package path -->
 
@@ -19,22 +27,19 @@ destination: ./bin
 plugins:
   - module: github.com/yowainwright/golangci-lint-legibility
     import: github.com/yowainwright/golangci-lint-legibility/plugin
-    version: v0.1.0
+    version: v0.2.0
 ```
 
-Replace `v0.1.0` with the release tag you want to use.
-
-Build the custom binary:
+Install `golangci-lint`, then build the custom binary:
 
 ```sh
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 golangci-lint custom
 ```
 
-## Homebrew
+### Homebrew
 
 <!-- Homebrew tap commands derived from Formula/golangci-lint-legibility.rb -->
-
-Install the custom binary from this repository as a tap:
 
 ```sh
 brew tap yowainwright/golangci-lint-legibility https://github.com/yowainwright/golangci-lint-legibility
@@ -45,31 +50,397 @@ brew install golangci-lint-legibility
 
 <!-- rules derived from internal/analyzers/analyzers.go and analyzer constructors -->
 
+Removed lines are don'ts. Added lines are dos.
+
 | Code | Rule | Summary |
 | --- | --- | --- |
-| `LEG001` | `max-expression-operators` | Limit operators inside a single expression. |
-| `LEG002` | `hoist-if-operators` | Prefer named booleans before operator-heavy conditions. |
-| `LEG003` | `max-control-flow-depth` | Limit nested control-flow depth. |
-| `LEG005` | `no-quadratic-patterns` | Flag likely quadratic nested loops. |
-| `LEG006` | `no-redundant-boolean-logic` | Avoid redundant boolean comparisons. |
-| `LEG007` | `prefer-positive-condition-names` | Prefer positive condition names. |
-| `LEG008` | `no-trivial-wrapper-functions` | Avoid functions that only forward parameters to another call. |
-| `LEG009` | `prefer-early-return` | Avoid else branches after a branch already exits. |
-| `LEG010` | `prefer-guard-clauses` | Prefer guard clauses over wrapping the main path in one large if block. |
-| `LEG011` | `max-array-chain-depth` | Limit consecutive collection-style method chains. |
-| `LEG012` | `no-computed-values` | Prefer named values before returning computed expressions. |
-| `LEG024` | `prefer-object-lookup` | Prefer set or map lookups over long equality-or chains. |
-| `LEG025` | `require-filename-matches-dirname` | Opt-in. Require files in named subdirectories to match the directory name. |
-| `LEG026` | `no-mixed-filename-casing` | Avoid filenames that mix casing conventions. |
-| `LEG031` | `no-deep-selector-chain` | Avoid deep selector or index chains without named intermediate values. |
-| `LEG034` | `prefer-switch-over-long-if-chain` | Prefer switch over long if chains that compare the same value. |
-| `LEG035` | `no-bool-literal-args` | Avoid boolean literals as call arguments. |
-| `LEG036` | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
-| `LEG037` | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
-| `LEG038` | `max-function-lines` | Limit functions to a focused line budget. |
-| `LEG039` | `no-unmatched-comments` | Policy opt-in. Reject comments without an allowed matcher or boundary identifier. |
-| `LEG040` | `no-automated-comment-attribution` | Reject explicit automated source signatures in comments. |
-| `LEG041` | `prefer-line-comments` | Prefer `//` comments for ordinary multiline prose. |
+| [`LEG001`](#leg001-max-expression-operators) | `max-expression-operators` | Limit operators inside a single expression. |
+| [`LEG002`](#leg002-hoist-if-operators) | `hoist-if-operators` | Prefer named booleans before operator-heavy conditions. |
+| [`LEG003`](#leg003-max-control-flow-depth) | `max-control-flow-depth` | Limit nested control-flow depth. |
+| [`LEG005`](#leg005-no-quadratic-patterns) | `no-quadratic-patterns` | Flag likely quadratic nested loops. |
+| [`LEG006`](#leg006-no-redundant-boolean-logic) | `no-redundant-boolean-logic` | Avoid redundant boolean comparisons. |
+| [`LEG007`](#leg007-prefer-positive-condition-names) | `prefer-positive-condition-names` | Prefer positive condition names. |
+| [`LEG008`](#leg008-no-trivial-wrapper-functions) | `no-trivial-wrapper-functions` | Avoid functions that only forward parameters to another call. |
+| [`LEG009`](#leg009-prefer-early-return) | `prefer-early-return` | Avoid else branches after a branch already exits. |
+| [`LEG010`](#leg010-prefer-guard-clauses) | `prefer-guard-clauses` | Prefer guard clauses over wrapping the main path in one large if block. |
+| [`LEG011`](#leg011-max-array-chain-depth) | `max-array-chain-depth` | Limit consecutive collection-style method chains. |
+| [`LEG012`](#leg012-no-computed-values) | `no-computed-values` | Prefer named values before returning computed expressions. |
+| [`LEG024`](#leg024-prefer-object-lookup) | `prefer-object-lookup` | Prefer set or map lookups over long equality-or chains. |
+| [`LEG025`](#leg025-require-filename-matches-dirname) | `require-filename-matches-dirname` | Opt-in. Require files in named subdirectories to match the directory name. |
+| [`LEG026`](#leg026-no-mixed-filename-casing) | `no-mixed-filename-casing` | Avoid filenames that mix casing conventions. |
+| [`LEG031`](#leg031-no-deep-selector-chain) | `no-deep-selector-chain` | Avoid deep selector or index chains without named intermediate values. |
+| [`LEG034`](#leg034-prefer-switch-over-long-if-chain) | `prefer-switch-over-long-if-chain` | Prefer switch over long if chains that compare the same value. |
+| [`LEG035`](#leg035-no-bool-literal-args) | `no-bool-literal-args` | Avoid boolean literals as call arguments. |
+| [`LEG036`](#leg036-no-complex-if-init) | `no-complex-if-init` | Avoid combining an if initializer with an operator-heavy condition. |
+| [`LEG037`](#leg037-no-deep-composite-literal-arg) | `no-deep-composite-literal-arg` | Avoid deeply nested composite literals as call arguments. |
+| [`LEG038`](#leg038-max-function-lines) | `max-function-lines` | Limit functions to a focused line budget. |
+| [`LEG039`](#leg039-no-unmatched-comments) | `no-unmatched-comments` | Policy opt-in. Reject comments without an allowed matcher or boundary identifier. |
+| [`LEG040`](#leg040-no-automated-comment-attribution) | `no-automated-comment-attribution` | Reject explicit automated source signatures in comments. |
+| [`LEG041`](#leg041-prefer-line-comments) | `prefer-line-comments` | Prefer `//` comments for ordinary multiline prose. |
+
+<!-- do/don't examples for non-comment rules registered in internal/analyzers/analyzers.go -->
+
+<a id="leg001-max-expression-operators"></a>
+
+### `LEG001 max-expression-operators`
+
+#### do / don't
+
+```diff
+- return user.Active && user.Score > 10 && (user.Role == "admin" || user.Role == "owner")
++ isAdmin := user.Role == "admin"
++ isOwner := user.Role == "owner"
++ hasPrivilegedRole := isAdmin || isOwner
++ return user.Active && user.Score > 10 && hasPrivilegedRole
+```
+
+<a id="leg002-hoist-if-operators"></a>
+
+### `LEG002 hoist-if-operators`
+
+#### do / don't
+
+```diff
+- if user != nil && user.Active && !user.Locked {
+- 	sendInvite(user)
+- }
++ canInviteUser := user != nil && user.Active && !user.Locked
++ if canInviteUser {
++ 	sendInvite(user)
++ }
+```
+
+<a id="leg003-max-control-flow-depth"></a>
+
+### `LEG003 max-control-flow-depth`
+
+#### do / don't
+
+```diff
+- if user != nil {
+- 	for _, invite := range invites {
+- 		if invite.Pending {
+- 			if invite.Retries < 3 {
+- 				sendInvite(invite)
+- 			}
+- 		}
+- 	}
+- }
++ if user == nil {
++ 	return
++ }
++ for _, invite := range pendingInvites(invites) {
++ 	retryInvite(invite)
++ }
+```
+
+<a id="leg005-no-quadratic-patterns"></a>
+
+### `LEG005 no-quadratic-patterns`
+
+#### do / don't
+
+```diff
+- for _, user := range users {
+- 	for _, owner := range owners {
+- 		if user.ID == owner.UserID {
+- 			assignOwner(user, owner)
+- 		}
+- 	}
+- }
++ ownersByUserID := mapOwnersByUserID(owners)
++ for _, user := range users {
++ 	owner := ownersByUserID[user.ID]
++ 	assignOwner(user, owner)
++ }
+```
+
+<a id="leg006-no-redundant-boolean-logic"></a>
+
+### `LEG006 no-redundant-boolean-logic`
+
+#### do / don't
+
+```diff
+- return enabled == true
++ return enabled
+```
+
+<a id="leg007-prefer-positive-condition-names"></a>
+
+### `LEG007 prefer-positive-condition-names`
+
+#### do / don't
+
+```diff
+- isNotReady := status != StatusReady
+- if isNotReady {
++ isReady := status == StatusReady
++ if !isReady {
+     return nil
+ }
+```
+
+<a id="leg008-no-trivial-wrapper-functions"></a>
+
+### `LEG008 no-trivial-wrapper-functions`
+
+#### do / don't
+
+```diff
+- func cleanName(name string) string {
+- 	return strings.TrimSpace(name)
+- }
+-
+- displayName := cleanName(input)
++ displayName := strings.TrimSpace(input)
+```
+
+<a id="leg009-prefer-early-return"></a>
+
+### `LEG009 prefer-early-return`
+
+#### do / don't
+
+```diff
+ if err != nil {
+     return err
+- } else {
+- 	saveUser(user)
+ }
++ saveUser(user)
+```
+
+<a id="leg010-prefer-guard-clauses"></a>
+
+### `LEG010 prefer-guard-clauses`
+
+#### do / don't
+
+```diff
+- if user.Active {
+- 	validateUser(user)
+- 	saveUser(user)
+- }
++ if !user.Active {
++ 	return
++ }
++ validateUser(user)
++ saveUser(user)
+```
+
+<a id="leg011-max-array-chain-depth"></a>
+
+### `LEG011 max-array-chain-depth`
+
+#### do / don't
+
+```diff
+- hasLargeActiveOrder := orders.Filter(activeOrder).Map(orderTotal).Some(overLimit)
++ activeOrders := orders.Filter(activeOrder)
++ orderTotals := activeOrders.Map(orderTotal)
++ hasLargeActiveOrder := orderTotals.Some(overLimit)
+```
+
+<a id="leg012-no-computed-values"></a>
+
+### `LEG012 no-computed-values`
+
+#### do / don't
+
+```diff
+- return subtotal + tax + shipping
++ taxedSubtotal := subtotal + tax
++ return taxedSubtotal + shipping
+```
+
+<a id="leg024-prefer-object-lookup"></a>
+
+### `LEG024 prefer-object-lookup`
+
+#### do / don't
+
+```diff
+- return role == "admin" || role == "owner" || role == "staff"
++ allowedRoles := map[string]bool{
++ 	"admin": true,
++ 	"owner": true,
++ 	"staff": true,
++ }
++ return allowedRoles[role]
+```
+
+<a id="leg025-require-filename-matches-dirname"></a>
+
+### `LEG025 require-filename-matches-dirname`
+
+Opt-in. Enable it with `enabled-rules` when the project uses directory-mirrored filenames.
+
+#### do / don't
+
+```diff
+- internal/orders/service.go
++ internal/orders/orders_service.go
+```
+
+<a id="leg026-no-mixed-filename-casing"></a>
+
+### `LEG026 no-mixed-filename-casing`
+
+#### do / don't
+
+```diff
+- internal/API_client.go
++ internal/api_client.go
+```
+
+<a id="leg031-no-deep-selector-chain"></a>
+
+### `LEG031 no-deep-selector-chain`
+
+#### do / don't
+
+```diff
+- return config.User.Profile.Settings.Email.Enabled
++ userProfile := config.User.Profile
++ emailSettings := userProfile.Settings.Email
++ return emailSettings.Enabled
+```
+
+<a id="leg034-prefer-switch-over-long-if-chain"></a>
+
+### `LEG034 prefer-switch-over-long-if-chain`
+
+#### do / don't
+
+```diff
+- if status == "new" {
+- 	return 1
+- } else if status == "active" {
+- 	return 2
+- } else if status == "closed" {
+- 	return 3
+- }
++ switch status {
++ case "new":
++ 	return 1
++ case "active":
++ 	return 2
++ case "closed":
++ 	return 3
++ }
+```
+
+<a id="leg035-no-bool-literal-args"></a>
+
+### `LEG035 no-bool-literal-args`
+
+#### do / don't
+
+```diff
+- createUser(user, true, false)
++ shouldSendInvite := true
++ shouldRequirePasswordReset := false
++ createUser(user, shouldSendInvite, shouldRequirePasswordReset)
+```
+
+<a id="leg036-no-complex-if-init"></a>
+
+### `LEG036 no-complex-if-init`
+
+#### do / don't
+
+```diff
+- if user, ok := users[id]; ok && user.Active {
+- 	save(user)
+- }
++ user, ok := users[id]
++ canSaveUser := ok && user.Active
++ if canSaveUser {
++ 	save(user)
++ }
+```
+
+<a id="leg037-no-deep-composite-literal-arg"></a>
+
+### `LEG037 no-deep-composite-literal-arg`
+
+#### do / don't
+
+```diff
+- save(Config{HTTP: HTTPConfig{Timeout: 10}})
++ httpConfig := HTTPConfig{Timeout: 10}
++ save(Config{HTTP: httpConfig})
+```
+
+<a id="leg038-max-function-lines"></a>
+
+### `LEG038 max-function-lines`
+
+With `max-function-lines: 6`:
+
+#### do / don't
+
+```diff
+- func syncUser(user User) error {
+- 	validateUser(user)
+- 	normalizeUser(&user)
+- 	saveUser(user)
+- 	sendWelcomeEmail(user)
+- 	writeAuditLog(user)
+- 	refreshSearchIndex(user)
+- 	return nil
+- }
++ func syncUser(user User) error {
++ 	if err := prepareUser(&user); err != nil {
++ 		return err
++ 	}
++ 	return persistUser(user)
++ }
+```
+
+<!-- comment rule examples derived from tests/e2e/comments_test.go and tests/e2e/testdata/comments -->
+
+<a id="leg039-no-unmatched-comments"></a>
+
+### `LEG039 no-unmatched-comments`
+
+Opt-in. When a repository configures an allowed comment pattern, ordinary comments must match it. With a ticket matcher enabled:
+
+#### do / don't
+
+```diff
+- // Retry requests in provider order.
++ // ENG-482: Retry requests in provider order.
+```
+
+<a id="leg040-no-automated-comment-attribution"></a>
+
+### `LEG040 no-automated-comment-attribution`
+
+Keep useful context, but remove comments that attribute code or prose to an automated tool.
+
+#### do / don't
+
+```diff
+- // Generated by Codex.
++ // The provider requires retries to remain ordered.
+```
+
+<a id="leg041-prefer-line-comments"></a>
+
+### `LEG041 prefer-line-comments`
+
+Use Go line comments for ordinary multiline prose.
+
+#### do / don't
+
+```diff
+- /*
+- The provider requires retries to remain ordered.
+- */
++ // The provider requires retries to remain ordered.
+```
 
 ## Configure
 
@@ -102,14 +473,6 @@ linters:
           max-if-init-operators: 0
           max-composite-literal-arg-depth: 1
           max-function-lines: 20
-          comment-matchers:
-            - '\b(ENG|OPS)-\d+\b'
-          comment-prefix-identifiers:
-            - HUMAN
-            - LEGAL
-            - SECURITY
-          comment-suffix-identifiers:
-            - '@owned'
           disabled-rules:
             - prefer-guard-clauses
 ```
@@ -127,84 +490,108 @@ See the `golangci-lint` [module plugin docs](https://golangci-lint.run/docs/plug
 
 <!-- workflow recipes derived from consumer binary names, golangci-lint run flags, CI checkout behavior, and comment policy settings -->
 
-Use one committed `.golangci.yml` in every context. Change the scope and whether diagnostics block the workflow, not the rules or thresholds each context sees. Local feedback then stays representative of CI.
+The examples use the locally built binary. Homebrew users can omit `./bin/`.
 
-The examples use `./bin/legibility-golangci-lint`. Homebrew installs the same executable on `PATH`, so use `legibility-golangci-lint` without the `./bin/` prefix.
+### Comment rules
 
-| Context | Scope | Enforcement |
-| --- | --- | --- |
-| Agent edit loop | Changes since `HEAD` | Blocking |
-| Human exploration | New issues in the working tree | Advisory |
-| Pre-commit | Changes since `HEAD` | Blocking |
-| CI | Entire repository | Blocking |
+<!-- comment recipes derived from tests/e2e/comments_test.go and tests/e2e/testdata/comments -->
 
-### Agents
+No ownership marker is required. Start with the base configuration from [Configure](#configure), then add only the policy your repository uses.
 
-Run the linter after each coherent Go edit:
+#### Allow ordinary comments
 
-```sh
-./bin/legibility-golangci-lint run --new-from-rev=HEAD ./...
+`LEG039` is opt-in. Leave `comment-matchers`, `comment-prefix-identifiers`, and `comment-suffix-identifiers` unset to allow ordinary comments.
+
+The [comment E2Es](tests/e2e/comments_test.go) run the [base config](tests/e2e/testdata/comments/default/.golangci.yml) against an [ordinary comment](tests/e2e/testdata/comments/default/main.go).
+
+#### Require ticket references
+
+Add one matcher to the `legibility` settings:
+
+```yaml
+linters:
+  settings:
+    custom:
+      legibility:
+        settings:
+          comment-matchers:
+            - '\b(ENG|OPS)-\d+\b'
 ```
 
-`--new-from-rev=HEAD` includes staged, unstaged, and untracked changes. Agents should fix diagnostics introduced by their edits. They must not add ownership identifiers, broaden matchers, or add `//nolint` directives merely to pass lint.
+The [comment E2Es](tests/e2e/comments_test.go) run this [exact config](tests/e2e/testdata/comments/ticket/.golangci.yml) against [rejected](tests/e2e/testdata/comments/ticket/unmatched/main.go) and [accepted](tests/e2e/testdata/comments/ticket/matched/main.go) comments.
 
-Agents can read and preserve comments accepted by the repository policy. An unmatched comment introduced during the session should be removed or replaced by clearer code. Pre-existing diagnostics outside the task should be reported rather than suppressed or rewritten.
+#### Reject automated attribution
 
-### Humans
+`LEG040` is enabled by default and recognizes common automated-tool names. To use a project-specific list, replace the built-in identifiers:
 
-Use advisory mode while exploring a change:
+```yaml
+linters:
+  settings:
+    custom:
+      legibility:
+        settings:
+          automated-comment-identifiers:
+            - internal-bot
+```
+
+The [comment E2Es](tests/e2e/comments_test.go) use the [base config](tests/e2e/testdata/comments/default/.golangci.yml) with a [rejected signature](tests/e2e/testdata/comments/attribution/signature/main.go) and [accepted context](tests/e2e/testdata/comments/attribution/context/main.go).
+
+#### Prefer line comments
+
+`LEG041` is enabled by default. No additional configuration is required.
+
+The [comment E2Es](tests/e2e/comments_test.go) use the [base config](tests/e2e/testdata/comments/default/.golangci.yml) with [rejected block prose](tests/e2e/testdata/comments/line-comments/block/main.go) and an [accepted line comment](tests/e2e/testdata/comments/line-comments/line/main.go).
+
+#### Preserve Go metadata
+
+Go directives, build constraints, generated-code markers, and cgo preambles are exempt.
+
+The [comment E2Es](tests/e2e/comments_test.go) enable only `LEG039` with the [strict config](tests/e2e/testdata/comments/metadata/.golangci.yml), then accept a [Go directive](tests/e2e/testdata/comments/metadata/directive/main.go) and [cgo preamble](tests/e2e/testdata/comments/metadata/cgo/main.go). Comment rules do not autofix source.
+
+### Human workflow
+
+Use advisory mode while editing:
 
 ```sh
 ./bin/legibility-golangci-lint run --new --issues-exit-code=0 ./...
 ```
 
-Before sharing or committing the change, remove advisory mode:
+Check all staged, unstaged, and untracked changes before committing:
 
 ```sh
 ./bin/legibility-golangci-lint run --new-from-rev=HEAD ./...
 ```
 
-Humans can use the configured prefix or suffix identifiers for comments that preserve intentional context. Keep regular-expression matchers narrow and reserve them for project conventions such as ticket references and tool directives. Reserve `//nolint:legibility` for an isolated false positive with an explanation.
+Write normal Go comments. No role label is needed.
 
-### Pre-commit
-
-Use the blocking form in the hook runner of your choice:
+### Agent workflow
 
 ```sh
 ./bin/legibility-golangci-lint run --new-from-rev=HEAD ./...
 ```
 
-This checks the current changes against `HEAD`. Keep the committed configuration identical to CI so a passing hook predicts a passing build.
+Agents should prefer clearer code over new comments and should not suppress diagnostics.
 
 ### CI
 
-Build the pinned custom binary, then lint the whole repository:
+Lint the whole repository in required checks:
 
 ```sh
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
-golangci-lint custom
 ./bin/legibility-golangci-lint run ./...
 ```
 
-For a large repository with an existing baseline, retain full Git history before blocking only new PR diagnostics. Configure `actions/checkout` to keep full history:
+For repositories with an existing baseline, check out full history:
 
 ```yaml
 with:
   fetch-depth: 0
 ```
 
-Fetching only `origin/main` cannot repair a shallow PR head. Refresh the base branch before running merge-base mode:
-
 ```sh
-git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
 ./bin/legibility-golangci-lint run --new-from-merge-base=origin/main ./...
 ```
 
-Do not use `--issues-exit-code=0` in a required CI check. Cache Go modules and the `golangci-lint` cache as described in [Performance](#performance).
-
-### Gradual adoption
-
-Start with an advisory inventory that disables both output caps:
+Inventory the complete baseline without output caps:
 
 ```sh
 ./bin/legibility-golangci-lint run \
@@ -214,80 +601,9 @@ Start with an advisory inventory that disables both output caps:
   ./...
 ```
 
-1. Tune thresholds and exclusions for the repository without creating context-specific configs.
-2. Configure comment ownership only when the repository has chosen its matcher or identifier convention.
-3. Fix the remaining diagnostics, remove advisory mode, and make the full CI check required.
-
-## Performance
-
-Lint only changed files on PRs — 50–75% faster:
-
-```sh
-golangci-lint run --new-from-merge-base=main ./...
-```
-
-Cache `~/.cache/golangci-lint` between CI runs to avoid cold-start overhead. Example for GitHub Actions:
-
-```yaml
-- uses: actions/cache@v4
-  with:
-    path: ~/.cache/golangci-lint
-    key: golangci-lint-${{ hashFiles('**/*.go') }}
-```
-
 ## Troubleshooting
 
 **Build step fails or binary crashes at runtime** — the plugin and `golangci-lint` must be built with the same Go toolchain. Run `go version` and confirm your toolchain matches the version in `go.mod`.
-
-## Trust
-
-<!-- release and provenance guarantees derived from .github/workflows/release.yml, .goreleaser.yaml, and LICENSE -->
-
-Releases are built from pushed `v*` tags by GitHub Actions. Release tags are protected from updates and deletion, and only the repository owner can create matching release tags.
-
-The release workflow runs `go mod tidy` drift checks, formatting, `go vet`, tests, and this linter against itself before publishing. Release jobs use pinned GitHub Actions, least-privilege permissions, and a main-branch ancestry check before publishing.
-
-GoReleaser publishes a source archive and `checksums.txt`. GitHub releases do not publish a standalone binary; the Homebrew formula builds a custom `golangci-lint` binary from the released source.
-
-Release artifacts are covered by GitHub artifact attestations. They use short-lived OIDC/Sigstore credentials from GitHub Actions instead of long-lived signing secrets.
-
-Verify a release:
-
-```sh
-gh release download v0.1.0 \
-  --repo yowainwright/golangci-lint-legibility \
-  --pattern "golangci-lint-legibility_*_source.tar.gz" \
-  --pattern "checksums.txt"
-
-sha256sum -c checksums.txt
-
-gh attestation verify golangci-lint-legibility_0.1.0_source.tar.gz \
-  --repo yowainwright/golangci-lint-legibility
-```
-
-OpenSSF Scorecard runs weekly and reports supply-chain posture through GitHub code scanning.
-
-## Release
-
-<!-- release commands derived from .goreleaser.yaml and .github/workflows/release.yml -->
-
-Create a release by signing and pushing a `v*` tag:
-
-```sh
-go mod tidy
-make check
-
-git tag -s v0.1.0
-git push origin v0.1.0
-```
-
-The pushed tag triggers GoReleaser. After the workflow finishes, warm the Go module proxy:
-
-```sh
-GOPROXY=proxy.golang.org go list -m github.com/yowainwright/golangci-lint-legibility@v0.1.0
-```
-
-Update the Homebrew formula for each release by replacing the source archive URL and checksum in `Formula/golangci-lint-legibility.rb`. `brew livecheck golangci-lint-legibility` reads the latest GitHub release for update detection.
 
 ## Settings
 
@@ -317,34 +633,16 @@ Update the Homebrew formula for each release by replacing the source archive URL
 
 Rule selectors accept rule codes such as `LEG009`, rule names such as `prefer-early-return`, or `all`. `require-filename-matches-dirname` is opt-in because ordinary Go packages often contain files that should not mirror the directory name. `no-unmatched-comments` activates when an allow path is configured or when the rule is explicitly selected.
 
-## Comment policy
-
-The comment rules form one policy stack. No ownership marker is preferred by the linter; repositories configure the convention that fits their workflow.
-
-`no-unmatched-comments` checks each Go comment group as one unit. Consecutive `//` lines can use one prefix on the first line or one suffix on the last line. A group is accepted when any configured regular expression, prefix identifier, or suffix identifier matches. The rule activates when an allow path is configured. Explicitly selecting it with no allow path rejects every ordinary comment.
-
-Matchers use Go regular-expression syntax, run case-insensitively against comment text without delimiters, and ignore invalid patterns. Prefix and suffix identifiers are literal, case-insensitive, and require a Go identifier boundary. Empty identifiers do not match.
-
-The ownership rule leaves syntax and tool metadata alone:
-
-- `//go:` compiler and tool directives, `//line`, `//extern`, `//export`, and `//nolint` directives.
-- Legacy `// +build` constraints.
-- Exact `// Code generated ... DO NOT EDIT.` markers before the package clause.
-- Comment groups used as cgo preambles for `import "C"`.
-
-`no-automated-comment-attribution` reports configured identifiers only when a comment explicitly assigns authorship or generation to them. Ordinary references to those technologies are unchanged. The default identifiers are `ai`, `chatgpt`, `claude`, `codex`, `copilot`, `gemini`, `gpt`, `llm`, and `openai`; set `automated-comment-identifiers: []` to disable signature matching.
-
-`prefer-line-comments` reports multiline `/* ... */` prose because line comments are the Go norm. Single-line block comments and cgo preambles are unchanged. None of the comment rules applies an autofix.
-
 ## Develop
 
-<!-- development commands derived from Makefile -->
+<!-- development commands derived from Makefile and tests/e2e/Dockerfile -->
 
 ```sh
 make tidy-check
 make test
 make vet
+make e2e
 make lint
 ```
 
-`make lint` builds `./bin/legibility-golangci-lint` from the included `.custom-gcl.yml` and runs it against this repo.
+`make e2e` requires Docker. It uses the [E2E image](tests/e2e/Dockerfile) to build the custom linter and run it against the fixture projects. `make lint` builds the custom binary locally and runs it against this repository.

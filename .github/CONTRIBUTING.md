@@ -11,10 +11,11 @@ go mod download
 make tidy-check
 make test
 make vet
+make e2e
 make lint
 ```
 
-`make lint` builds `./bin/legibility-golangci-lint` from `.custom-gcl.yml` and runs the custom linter against this repo.
+`make e2e` requires Docker. It uses the [E2E image](../tests/e2e/Dockerfile) to build the custom linter and run it against the fixture projects. `make lint` builds `./bin/legibility-golangci-lint` from `.custom-gcl.yml` and checks this repository.
 
 ## Code Style
 

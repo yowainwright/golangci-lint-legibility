@@ -72,12 +72,28 @@ func TestNoUnmatchedCommentsChecksMisplacedGeneratedMarker(t *testing.T) {
 	requireDiagnosticsCount(t, diagnostics, 1)
 }
 
+func TestNoUnmatchedCommentsChecksMisplacedCgoMarker(t *testing.T) {
+	source := readTestSource(t, "misplaced_cgo_generated_marker.go")
+
+	analyzer := explicitNoUnmatchedCommentsAnalyzer(t)
+	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
+	requireDiagnosticsCount(t, diagnostics, 1)
+}
+
 func TestNoUnmatchedCommentsIgnoresCgoPreamble(t *testing.T) {
 	source := readTestSource(t, "cgo_preamble.go")
 
 	analyzer := explicitNoUnmatchedCommentsAnalyzer(t)
 	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
 	requireDiagnosticsCount(t, diagnostics, 0)
+}
+
+func TestNoUnmatchedCommentsChecksDocumentedBlankUnsafeImport(t *testing.T) {
+	source := readTestSource(t, "blank_unsafe_comment.go")
+
+	analyzer := explicitNoUnmatchedCommentsAnalyzer(t)
+	diagnostics := runAnalyzer(t, analyzer, "p.go", source)
+	requireDiagnosticsCount(t, diagnostics, 1)
 }
 
 func TestNoUnmatchedCommentsIgnoresInvalidMatchers(t *testing.T) {
