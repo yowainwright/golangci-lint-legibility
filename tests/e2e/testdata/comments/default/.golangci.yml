@@ -1,0 +1,12 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - legibility
+  settings:
+    custom:
+      legibility:
+        type: module
+        description: Syntax-only Go legibility rules.
+        original-url: github.com/yowainwright/golangci-lint-legibility

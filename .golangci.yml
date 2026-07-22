@@ -24,12 +24,6 @@ linters:
           max-function-lines: 20
           comment-matchers:
             - '\b(ENG|OPS)-\d+\b'
-          comment-prefix-identifiers:
-            - HUMAN
-            - LEGAL
-            - SECURITY
-          comment-suffix-identifiers:
-            - '@owned'
 
 formatters:
   enable:

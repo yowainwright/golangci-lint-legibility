@@ -9,3 +9,6 @@ type Status int
 
 //nolint:unused
 func value() {}
+
+/*line generated.go:12*/
+func generatedValue() {}
