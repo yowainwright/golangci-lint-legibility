@@ -22,8 +22,6 @@ linters:
           max-if-init-operators: 0
           max-composite-literal-arg-depth: 1
           max-function-lines: 20
-          max-function-params: 5
-          max-naked-return-lines: 5
           comment-matchers:
             - '\b(ENG|OPS)-\d+\b'
 

@@ -2,44 +2,11 @@ package analyzers
 
 import (
 	"go/ast"
-	"go/token"
 	"strings"
 	"unicode"
 
 	"golang.org/x/tools/go/analysis"
 )
-
-var goInitialisms = map[string]bool{
-	"ACL":   true,
-	"API":   true,
-	"ASCII": true,
-	"CPU":   true,
-	"CSS":   true,
-	"DNS":   true,
-	"EOF":   true,
-	"GUID":  true,
-	"HTML":  true,
-	"HTTP":  true,
-	"HTTPS": true,
-	"ID":    true,
-	"IP":    true,
-	"JSON":  true,
-	"RPC":   true,
-	"SMTP":  true,
-	"SQL":   true,
-	"SSH":   true,
-	"TCP":   true,
-	"TLS":   true,
-	"TTL":   true,
-	"UDP":   true,
-	"UID":   true,
-	"URI":   true,
-	"URL":   true,
-	"UTF8":  true,
-	"UUID":  true,
-	"XML":   true,
-	"XSS":   true,
-}
 
 var getterPrefixes = []string{"Get", "get"}
 
@@ -50,30 +17,6 @@ func newNoGetterPrefix() ruleSpec {
 		"Avoid the Get prefix on accessor names.",
 		func(pass *analysis.Pass) (any, error) {
 			checkGetterPrefixes(pass)
-			return nil, nil
-		},
-	)
-}
-
-func newNoUnderscoreNames() ruleSpec {
-	return newAnalyzer(
-		"LEG043",
-		"no-underscore-names",
-		"Prefer MixedCaps over underscores in declared names.",
-		func(pass *analysis.Pass) (any, error) {
-			checkUnderscoreNames(pass)
-			return nil, nil
-		},
-	)
-}
-
-func newPreferInitialismCasing() ruleSpec {
-	return newAnalyzer(
-		"LEG044",
-		"prefer-initialism-casing",
-		"Keep initialisms fully capitalized in declared names.",
-		func(pass *analysis.Pass) (any, error) {
-			checkInitialismCasing(pass)
 			return nil, nil
 		},
 	)
@@ -133,267 +76,6 @@ func isGetterSignature(funcType *ast.FuncType) bool {
 	return fieldCount(funcType.Results) > 0
 }
 
-func checkUnderscoreNames(pass *analysis.Pass) {
-	for _, file := range pass.Files {
-		if skipsNameChecks(pass, file) {
-			continue
-		}
-
-		inspectDeclaredNames(file, func(identifier *ast.Ident) {
-			checkUnderscoreName(pass, identifier)
-		})
-	}
-}
-
-func checkUnderscoreName(pass *analysis.Pass, identifier *ast.Ident) {
-	if !strings.Contains(identifier.Name, "_") {
-		return
-	}
-
-	report(
-		pass,
-		identifier,
-		"LEG043",
-		"no-underscore-names",
-		"Write multiword names as MixedCaps instead of using underscores.",
-	)
-}
-
-func checkInitialismCasing(pass *analysis.Pass) {
-	for _, file := range pass.Files {
-		if isGeneratedFile(file) {
-			continue
-		}
-
-		inspectDeclaredNames(file, func(identifier *ast.Ident) {
-			checkInitialismName(pass, identifier)
-		})
-	}
-}
-
-func checkInitialismName(pass *analysis.Pass, identifier *ast.Ident) {
-	initialism, found := misusedInitialism(identifier.Name)
-	if !found {
-		return
-	}
-
-	report(
-		pass,
-		identifier,
-		"LEG044",
-		"prefer-initialism-casing",
-		"Capitalize the initialism as "+initialism+".",
-	)
-}
-
-func misusedInitialism(name string) (string, bool) {
-	for _, word := range identifierWords(name) {
-		initialism, found := initialismCasingFix(word)
-		if found {
-			return initialism, true
-		}
-	}
-
-	return "", false
-}
-
-func initialismCasingFix(word string) (string, bool) {
-	if !startsUppercase(word) {
-		return "", false
-	}
-
-	upper := strings.ToUpper(word)
-	if !goInitialisms[upper] {
-		return "", false
-	}
-
-	if word == upper {
-		return "", false
-	}
-
-	return upper, true
-}
-
-func identifierWords(name string) []string {
-	words := make([]string, 0, len(name))
-	start := 0
-	for index, char := range name {
-		if !startsNewWord(index, char) {
-			continue
-		}
-
-		words = append(words, name[start:index])
-		start = index
-	}
-
-	return append(words, name[start:])
-}
-
-func startsNewWord(index int, char rune) bool {
-	if index == 0 {
-		return false
-	}
-
-	return unicode.IsUpper(char)
-}
-
-func startsUppercase(text string) bool {
-	if text == "" {
-		return false
-	}
-
-	return unicode.IsUpper([]rune(text)[0])
-}
-
-func inspectDeclaredNames(file *ast.File, visit func(*ast.Ident)) {
-	ast.Inspect(file, func(node ast.Node) bool {
-		visitDeclaredNames(node, visit)
-		return true
-	})
-}
-
-func visitDeclaredNames(node ast.Node, visit func(*ast.Ident)) {
-	for _, identifier := range declaredIdentifiers(node) {
-		if identifier.Name != "_" {
-			visit(identifier)
-		}
-	}
-}
-
-func declaredIdentifiers(node ast.Node) []*ast.Ident {
-	switch typed := node.(type) {
-	case *ast.FuncDecl:
-		return []*ast.Ident{typed.Name}
-	case *ast.TypeSpec:
-		return []*ast.Ident{typed.Name}
-	case *ast.ValueSpec:
-		return typed.Names
-	case *ast.Field:
-		return typed.Names
-	case *ast.AssignStmt:
-		return definedIdentifiers(typed)
-	case *ast.RangeStmt:
-		return rangeIdentifiers(typed)
-	default:
-		return nil
-	}
-}
-
-func rangeIdentifiers(stmt *ast.RangeStmt) []*ast.Ident {
-	if stmt.Tok != token.DEFINE {
-		return nil
-	}
-
-	identifiers := make([]*ast.Ident, 0, 2)
-	identifiers = appendIdentifier(identifiers, stmt.Key)
-	return appendIdentifier(identifiers, stmt.Value)
-}
-
-func definedIdentifiers(stmt *ast.AssignStmt) []*ast.Ident {
-	if stmt.Tok != token.DEFINE {
-		return nil
-	}
-
-	identifiers := make([]*ast.Ident, 0, len(stmt.Lhs))
-	for _, expression := range stmt.Lhs {
-		identifiers = appendIdentifier(identifiers, expression)
-	}
-
-	return identifiers
-}
-
-func appendIdentifier(identifiers []*ast.Ident, expression ast.Expr) []*ast.Ident {
-	identifier, ok := expression.(*ast.Ident)
-	if !ok {
-		return identifiers
-	}
-
-	return append(identifiers, identifier)
-}
-
-func enclosingFunction(node ast.Node, parents map[ast.Node]ast.Node) ast.Node {
-	for parent := parents[node]; parent != nil; parent = parents[parent] {
-		if functionBody(parent) != nil {
-			return parent
-		}
-	}
-
-	return nil
-}
-
-type declarationScan struct {
-	function ast.Node
-	name     string
-	before   token.Pos
-	count    int
-}
-
-func declarationCountBefore(function ast.Node, name string, before token.Pos) int {
-	scan := declarationScan{
-		function: function,
-		name:     name,
-		before:   before,
-	}
-	ast.Inspect(function, scan.inspect)
-
-	return scan.count
-}
-
-func (scan *declarationScan) inspect(node ast.Node) bool {
-	if node == nil {
-		return false
-	}
-	if isNestedFunctionNode(node, scan.function) {
-		return false
-	}
-	if nodeStartsAfterBoundary(node, scan.function, scan.before) {
-		return false
-	}
-
-	if declarationVisibleAt(node, scan.before) {
-		scan.count += declaredIdentifierCount(node, scan.name)
-	}
-	return true
-}
-
-func isNestedFunctionNode(node ast.Node, function ast.Node) bool {
-	if node == function {
-		return false
-	}
-
-	return functionBody(node) != nil
-}
-
-func nodeStartsAfterBoundary(node ast.Node, function ast.Node, boundary token.Pos) bool {
-	if node == function {
-		return false
-	}
-
-	return node.Pos() >= boundary
-}
-
-func declarationVisibleAt(node ast.Node, position token.Pos) bool {
-	switch typed := node.(type) {
-	case *ast.RangeStmt:
-		return typed.Body.Lbrace < position
-	case *ast.AssignStmt, *ast.ValueSpec, *ast.Field:
-		return node.End() < position
-	default:
-		return node.Pos() < position
-	}
-}
-
-func declaredIdentifierCount(node ast.Node, name string) int {
-	count := 0
-	for _, identifier := range declaredIdentifiers(node) {
-		if identifier.Name == name {
-			count++
-		}
-	}
-
-	return count
-}
-
 func fieldCount(fields *ast.FieldList) int {
 	if fields == nil {
 		return 0
@@ -415,17 +97,12 @@ func fieldNameCount(field *ast.Field) int {
 	return len(field.Names)
 }
 
-func skipsNameChecks(pass *analysis.Pass, file *ast.File) bool {
-	if isTestFile(pass, file) {
-		return true
+func startsUppercase(text string) bool {
+	if text == "" {
+		return false
 	}
 
-	return isGeneratedFile(file)
-}
-
-func isTestFile(pass *analysis.Pass, file *ast.File) bool {
-	filename := pass.Fset.File(file.Pos()).Name()
-	return strings.HasSuffix(filename, "_test.go")
+	return unicode.IsUpper([]rune(text)[0])
 }
 
 func isGeneratedFile(file *ast.File) bool {
